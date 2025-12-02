@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 440">
+  <defs>
+    <linearGradient id="fascistGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a31621"/>
+      <stop offset="100%" style="stop-color:#8b0000"/>
+    </linearGradient>
+    <filter id="paper2">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feBlend in="SourceGraphic" mode="multiply"/>
+    </filter>
+  </defs>
+
+  <!-- Card background -->
+  <rect width="300" height="440" rx="15" fill="url(#fascistGrad)"/>
+  <rect width="300" height="440" rx="15" fill="rgba(0,0,0,0.2)" filter="url(#paper2)"/>
+
+  <!-- Border -->
+  <rect x="10" y="10" width="280" height="420" rx="10" fill="none" stroke="#d4af37" stroke-width="3"/>
+  <rect x="20" y="20" width="260" height="400" rx="8" fill="none" stroke="#d4af37" stroke-width="1" opacity="0.5"/>
+
+  <!-- Skull symbol -->
+  <g transform="translate(150,190)" fill="#d4c5a9">
+    <!-- Skull dome -->
+    <ellipse cx="0" cy="-20" rx="45" ry="40"/>
+    <!-- Jaw -->
+    <rect x="-35" y="10" width="70" height="25" rx="5"/>
+    <!-- Eye sockets -->
+    <ellipse cx="-18" cy="-15" rx="12" ry="15" fill="#8b0000"/>
+    <ellipse cx="18" cy="-15" rx="12" ry="15" fill="#8b0000"/>
+    <!-- Nose -->
+    <path d="M-5,5 L0,15 L5,5 Z" fill="#8b0000"/>
+    <!-- Teeth -->
+    <g fill="#d4c5a9" stroke="#8b0000" stroke-width="1">
+      <rect x="-28" y="20" width="8" height="12" rx="1"/>
+      <rect x="-18" y="20" width="8" height="12" rx="1"/>
+      <rect x="-8" y="20" width="8" height="12" rx="1"/>
+      <rect x="2" y="20" width="8" height="12" rx="1"/>
+      <rect x="12" y="20" width="8" height="12" rx="1"/>
+      <rect x="22" y="20" width="8" height="12" rx="1"/>
+    </g>
+  </g>
+
+  <!-- Crossbones -->
+  <g transform="translate(150,260)" stroke="#d4c5a9" stroke-width="12" stroke-linecap="round" fill="none">
+    <line x1="-50" y1="-20" x2="50" y2="20"/>
+    <line x1="50" y1="-20" x2="-50" y2="20"/>
+  </g>
+
+  <!-- Text -->
+  <text x="150" y="60" text-anchor="middle" font-family="Georgia, serif" font-size="28" font-weight="bold" fill="#d4af37" letter-spacing="4">FASCIST</text>
+  <text x="150" y="390" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#d4c5a9" letter-spacing="2">POLICY</text>
+
+  <!-- Corner decorations -->
+  <g fill="#d4af37" opacity="0.6">
+    <circle cx="30" cy="30" r="5"/>
+    <circle cx="270" cy="30" r="5"/>
+    <circle cx="30" cy="410" r="5"/>
+    <circle cx="270" cy="410" r="5"/>
+  </g>
+</svg>

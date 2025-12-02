@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Card Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 1945 Wartime Animated Background -->
+    <div class="bubbles" id="bubbles"></div>
+
+    <!-- Sound Controls -->
+    <div id="sound-controls" class="sound-controls">
+        <button id="music-btn" class="sound-btn" title="Toggle Music">♪</button>
+        <button id="sfx-btn" class="sound-btn" title="Toggle Sound Effects">🔊</button>
+    </div>
+
+    <!-- Help Button -->
+    <button id="help-btn" class="help-btn">?</button>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-content">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <h2>How to Play</h2>
+
+            <div class="help-section">
+                <h3>Overview</h3>
+                <p>A social deduction game where Liberals try to stop the Fascists from gaining power.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Teams & Roles</h3>
+                <ul>
+                    <li><strong>Liberals:</strong> Enact 5 Liberal policies or eliminate Hitler.</li>
+                    <li><strong>Fascists:</strong> Enact 6 Fascist policies or elect Hitler as Chancellor.</li>
+                    <li><strong>Hitler:</strong> Must avoid suspicion and survive.</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Game Flow</h3>
+                <ol>
+                    <li><strong>Election:</strong> President nominates a Chancellor.</li>
+                    <li><strong>Voting:</strong> All players vote on the government.</li>
+                    <li><strong>Legislative:</strong> President and Chancellor enact a policy.</li>
+                    <li><strong>Executive:</strong> President may gain special powers.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div id="app">
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen active">
+            <div class="container">
+                <h1>Secret Card Game</h1>
+                <p class="subtitle">A social deduction game for 4-6 players</p>
+
+                <div id="join-create-section">
+                    <div class="input-group">
+                        <label for="player-name">Your Name:</label>
+                        <input type="text" id="player-name" maxlength="15" placeholder="Enter your name">
+                    </div>
+
+                    <div class="lobby-buttons">
+                        <button id="create-room-btn" class="btn btn-primary">Create Room</button>
+                        <div class="or-divider">OR</div>
+                        <div class="join-section">
+                            <input type="text" id="room-code" maxlength="4" placeholder="ROOM CODE">
+                            <button id="join-room-btn" class="btn btn-secondary">Join Room</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="room-section" class="hidden">
+                    <div class="room-code-display">
+                        <p>Room Code:</p>
+                        <h2 id="display-room-code"></h2>
+                        <p class="share-hint">Share this code with other players</p>
+                    </div>
+
+                    <div class="players-list">
+                        <h3>Players (<span id="player-count">0</span>/6)</h3>
+                        <div id="players-container"></div>
+                    </div>
+
+                    <button id="start-game-btn" class="btn btn-primary hidden">Start Game</button>
+                    <p id="waiting-msg" class="waiting-message">Waiting for host to start...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- Player Info Bar -->
+            <div class="player-info-bar">
+                <div class="your-role">
+                    <span id="your-name"></span>
+                    <span id="your-role-badge" class="role-badge"></span>
+                </div>
+                <div class="teammates-info" id="teammates-info"></div>
+            </div>
+
+            <!-- Game Board Header -->
+            <div class="game-header">
+                <div class="board-status">
+                    <div class="policy-track">
+                        <div class="track liberal-track">
+                            <h4>Liberal Policies</h4>
+                            <div class="policy-slots" id="liberal-slots">
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                            </div>
+                        </div>
+                        <div class="track fascist-track">
+                            <h4>Fascist Policies</h4>
+                            <div class="policy-slots" id="fascist-slots">
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                                <div class="policy-slot"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="game-info">
+                        <p>Cards Remaining: <span id="deck-count">17</span></p>
+                        <p>Election Tracker: <span id="election-tracker">0</span>/3</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Phase Container -->
+            <div id="game-phase-container">
+                <!-- Election Phase -->
+                <div id="election-phase" class="phase">
+                    <h2 id="election-title">Presidential Election</h2>
+                    <p id="election-info"></p>
+                    <div id="chancellor-selection" class="player-grid"></div>
+                </div>
+
+                <!-- Voting Phase -->
+                <div id="voting-phase" class="phase hidden">
+                    <h2>Vote on Government</h2>
+                    <p id="vote-info"></p>
+                    <div id="voting-area">
+                        <div id="vote-buttons" class="vote-buttons">
+                            <button id="vote-yes" class="btn btn-yes">JA! (Yes)</button>
+                            <button id="vote-no" class="btn btn-no">NEIN! (No)</button>
+                        </div>
+                        <p id="vote-waiting" class="hidden">Waiting for other players...</p>
+                    </div>
+                </div>
+
+                <!-- Vote Result Phase -->
+                <div id="vote-result-phase" class="phase hidden">
+                    <h2 id="vote-result-title"></h2>
+                    <div id="vote-results"></div>
+                    <button id="continue-from-vote" class="btn btn-primary">Continue</button>
+                </div>
+
+                <!-- Legislative Phase (President) -->
+                <div id="legislative-president-phase" class="phase hidden">
+                    <h2>Legislative Session</h2>
+                    <p id="legislative-president-info"></p>
+                    <div id="president-policies" class="card-selection"></div>
+                </div>
+
+                <!-- Legislative Phase (Chancellor) -->
+                <div id="legislative-chancellor-phase" class="phase hidden">
+                    <h2>Legislative Session</h2>
+                    <p id="legislative-chancellor-info"></p>
+                    <div id="chancellor-policies" class="card-selection"></div>
+                </div>
+
+                <!-- Waiting for Legislative -->
+                <div id="legislative-waiting-phase" class="phase hidden">
+                    <h2>Legislative Session</h2>
+                    <p id="legislative-waiting-info">The government is deciding on a policy...</p>
+                    <div class="waiting-spinner"></div>
+                </div>
+
+                <!-- Policy Result Phase -->
+                <div id="policy-result-phase" class="phase hidden">
+                    <h2 id="policy-result-title"></h2>
+                    <div id="policy-result-content"></div>
+                    <button id="continue-from-policy" class="btn btn-primary">Continue</button>
+                </div>
+
+                <!-- Chaos Phase -->
+                <div id="chaos-phase" class="phase hidden">
+                    <h2>CHAOS!</h2>
+                    <p>Three governments have failed in a row!</p>
+                    <div id="chaos-content"></div>
+                    <button id="continue-from-chaos" class="btn btn-primary">Continue</button>
+                </div>
+
+                <!-- Executive Phase -->
+                <div id="executive-phase" class="phase hidden">
+                    <h2>Presidential Power</h2>
+                    <p id="executive-info"></p>
+                    <div id="executive-action"></div>
+                </div>
+
+                <!-- Execution Result Phase -->
+                <div id="execution-result-phase" class="phase hidden">
+                    <h2>Execution</h2>
+                    <div id="execution-content"></div>
+                    <button id="continue-from-execution" class="btn btn-primary">Continue</button>
+                </div>
+
+                <!-- Game Over Phase -->
+                <div id="gameover-phase" class="phase hidden">
+                    <h2 id="winner-title"></h2>
+                    <p id="win-reason"></p>
+                    <div id="all-roles"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="error-toast" class="toast hidden"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>

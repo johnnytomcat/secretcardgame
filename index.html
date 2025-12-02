@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secret Card Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Bubbles Background -->
+    <div class="bubbles" id="bubbles"></div>
+
+    <!-- Help Button -->
+    <button id="help-btn" class="help-btn">?</button>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-content">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <h2>How to Play</h2>
+
+            <div class="help-section">
+                <h3>Overview</h3>
+                <p>A social deduction game where Liberals try to stop the Fascists from gaining power. Players are secretly assigned roles and must use deduction, deception, and voting to achieve their team's goals.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Teams & Roles</h3>
+                <ul>
+                    <li><strong>Liberals:</strong> Work together to enact Liberal policies or identify and eliminate Hitler.</li>
+                    <li><strong>Fascists:</strong> Know each other and Hitler. Try to enact Fascist policies or get Hitler elected Chancellor.</li>
+                    <li><strong>Hitler:</strong> Doesn't know who the Fascists are (in larger games). Must avoid suspicion.</li>
+                </ul>
+                <p><em>4 Players: 2 Liberals, 1 Fascist, 1 Hitler</em></p>
+                <p><em>5 Players: 3 Liberals, 1 Fascist, 1 Hitler</em></p>
+                <p><em>6 Players: 4 Liberals, 1 Fascist, 1 Hitler</em></p>
+            </div>
+
+            <div class="help-section">
+                <h3>Win Conditions</h3>
+                <div class="win-condition liberal">
+                    <strong>Liberals Win:</strong>
+                    <ul>
+                        <li>Enact 5 Liberal policies, OR</li>
+                        <li>Assassinate Hitler</li>
+                    </ul>
+                </div>
+                <div class="win-condition fascist">
+                    <strong>Fascists Win:</strong>
+                    <ul>
+                        <li>Enact 6 Fascist policies, OR</li>
+                        <li>Elect Hitler as Chancellor after 3 Fascist policies are enacted</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <h3>Game Flow</h3>
+                <ol>
+                    <li><strong>Election:</strong> The President nominates a Chancellor candidate.</li>
+                    <li><strong>Voting:</strong> All players secretly vote YES or NO on the government.</li>
+                    <li><strong>Legislative Session:</strong> If elected, the President draws 3 policies, discards 1, and passes 2 to the Chancellor who enacts 1.</li>
+                    <li><strong>Executive Action:</strong> After certain Fascist policies, the President gains special powers.</li>
+                </ol>
+            </div>
+
+            <div class="help-section">
+                <h3>Presidential Powers</h3>
+                <ul>
+                    <li><strong>Investigate Loyalty:</strong> See a player's party membership.</li>
+                    <li><strong>Examine Cards:</strong> Look at the top 3 policy cards.</li>
+                    <li><strong>Special Election:</strong> Choose the next President.</li>
+                    <li><strong>Execution:</strong> Kill a player (if Hitler, Liberals win!).</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Election Tracker</h3>
+                <p>If 3 governments are rejected in a row, the top policy is automatically enacted and the election tracker resets.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Keyboard Controls</h3>
+                <ul>
+                    <li><strong>Number Keys (1-6):</strong> Select players or policy cards</li>
+                    <li><strong>Voting:</strong> Each player has unique keys shown on screen</li>
+                    <li><strong>All selections are SECRET</strong> - no visual feedback is shown</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="app">
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen active">
+            <div class="container">
+                <h1>Secret Card Game</h1>
+                <p>A social deduction game for 4-6 players</p>
+                <div class="player-select">
+                    <label for="player-count">Number of Players:</label>
+                    <select id="player-count">
+                        <option value="4">4 Players</option>
+                        <option value="5">5 Players</option>
+                        <option value="6">6 Players</option>
+                    </select>
+                </div>
+                <button id="start-game" class="btn btn-primary">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Role Assignment Screen -->
+        <div id="role-screen" class="screen">
+            <div class="container">
+                <h2>Role Assignment</h2>
+                <p id="role-instruction">Pass the device to Player 1</p>
+                <button id="reveal-role" class="btn btn-primary">Reveal My Role</button>
+                <div id="role-display" class="hidden">
+                    <div class="role-card">
+                        <h3 id="role-name"></h3>
+                        <p id="role-description"></p>
+                        <div id="team-info"></div>
+                    </div>
+                    <button id="confirm-role" class="btn btn-secondary">I've Seen My Role</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="board-status">
+                    <div class="policy-track">
+                        <div class="track liberal-track">
+                            <h4>Liberal Policies</h4>
+                            <div class="policy-slots">
+                                <div class="policy-slot" data-index="0"></div>
+                                <div class="policy-slot" data-index="1"></div>
+                                <div class="policy-slot" data-index="2"></div>
+                                <div class="policy-slot" data-index="3"></div>
+                                <div class="policy-slot" data-index="4"></div>
+                            </div>
+                        </div>
+                        <div class="track fascist-track">
+                            <h4>Fascist Policies</h4>
+                            <div class="policy-slots">
+                                <div class="policy-slot" data-index="0"></div>
+                                <div class="policy-slot" data-index="1"></div>
+                                <div class="policy-slot" data-index="2"></div>
+                                <div class="policy-slot" data-index="3"></div>
+                                <div class="policy-slot" data-index="4"></div>
+                                <div class="policy-slot" data-index="5"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="game-info">
+                        <p>Cards Remaining: <span id="deck-count">17</span></p>
+                        <p>Election Tracker: <span id="election-tracker">0</span>/3</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="game-phase-container">
+                <!-- Election Phase -->
+                <div id="election-phase" class="phase">
+                    <h2>Presidential Election</h2>
+                    <p id="election-info">President selects a Chancellor</p>
+                    <p class="keyboard-hint">Press the number key to select (choice is secret)</p>
+                    <div id="player-selection" class="player-grid"></div>
+                </div>
+
+                <!-- Voting Phase -->
+                <div id="voting-phase" class="phase hidden">
+                    <h2>Vote on Government</h2>
+                    <p id="vote-info">President and Chancellor candidates</p>
+                    <div id="voting-area">
+                        <p class="vote-instruction">Each player votes secretly</p>
+                        <div id="voter-display">
+                            <p id="current-voter">Waiting for Player 1 to vote...</p>
+                            <p class="keyboard-hint">No visual feedback will be shown when you press a key</p>
+                            <div class="vote-buttons">
+                                <button class="btn btn-yes vote-btn">Yes (Ja!)</button>
+                                <button class="btn btn-no vote-btn">No (Nein!)</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legislative Session -->
+                <div id="legislative-phase" class="phase hidden">
+                    <h2>Legislative Session</h2>
+                    <div id="policy-selection">
+                        <p id="legislative-instruction"></p>
+                        <p class="keyboard-hint">Press the number key to select (cards are hidden - choice is secret)</p>
+                        <div id="policy-cards" class="card-selection"></div>
+                    </div>
+                </div>
+
+                <!-- Executive Action -->
+                <div id="executive-phase" class="phase hidden">
+                    <h2>Presidential Power</h2>
+                    <p id="power-description"></p>
+                    <p class="keyboard-hint">Press the number key to select (choice is secret)</p>
+                    <div id="power-action"></div>
+                </div>
+
+                <!-- Results Display -->
+                <div id="results-phase" class="phase hidden">
+                    <h2 id="results-title"></h2>
+                    <div id="results-content"></div>
+                    <button id="continue-btn" class="btn btn-primary">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="screen">
+            <div class="container">
+                <h1 id="winner-announcement"></h1>
+                <div id="role-reveal">
+                    <h3>Player Roles:</h3>
+                    <div id="final-roles"></div>
+                </div>
+                <button id="new-game" class="btn btn-primary">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

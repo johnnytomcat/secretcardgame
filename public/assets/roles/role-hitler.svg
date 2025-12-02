@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 380">
+  <defs>
+    <linearGradient id="hitRoleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b0000"/>
+      <stop offset="50%" style="stop-color:#4a0000"/>
+      <stop offset="100%" style="stop-color:#1a0000"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Card background -->
+  <rect width="280" height="380" rx="12" fill="url(#hitRoleGrad)"/>
+
+  <!-- Gold border -->
+  <rect x="8" y="8" width="264" height="364" rx="8" fill="none" stroke="#d4af37" stroke-width="4"/>
+  <rect x="14" y="14" width="252" height="352" rx="6" fill="none" stroke="#c9a227" stroke-width="1" opacity="0.6"/>
+
+  <!-- Header banner -->
+  <rect x="20" y="20" width="240" height="50" rx="5" fill="#4a0000" stroke="#d4af37" stroke-width="2"/>
+  <text x="140" y="52" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="bold" fill="#d4af37" letter-spacing="2" filter="url(#glow)">SECRET HITLER</text>
+
+  <!-- Iron cross with skull -->
+  <g transform="translate(140,160)">
+    <!-- Iron cross -->
+    <g fill="#d4af37" opacity="0.3">
+      <rect x="-45" y="-12" width="90" height="24"/>
+      <rect x="-12" y="-45" width="24" height="90"/>
+      <polygon points="-45,-12 -55,-18 -55,18 -45,12"/>
+      <polygon points="45,-12 55,-18 55,18 45,12"/>
+      <polygon points="-12,-45 -18,-55 18,-55 12,-45"/>
+      <polygon points="-12,45 -18,55 18,55 12,45"/>
+    </g>
+
+    <!-- Skull overlay -->
+    <g fill="#d4c5a9" transform="translate(0,5)">
+      <ellipse cx="0" cy="-15" rx="28" ry="24"/>
+      <rect x="-22" y="5" width="44" height="16" rx="3"/>
+      <ellipse cx="-11" cy="-12" rx="7" ry="9" fill="#4a0000"/>
+      <ellipse cx="11" cy="-12" rx="7" ry="9" fill="#4a0000"/>
+      <path d="M-3,2 L0,9 L3,2 Z" fill="#4a0000"/>
+    </g>
+  </g>
+
+  <!-- Warning text -->
+  <text x="140" y="245" text-anchor="middle" font-family="Georgia, serif" font-size="12" fill="#d4af37" letter-spacing="1">YOU ARE THE SECRET HITLER</text>
+
+  <!-- Divider -->
+  <line x1="40" y1="260" x2="240" y2="260" stroke="#d4af37" stroke-width="1" opacity="0.5"/>
+
+  <!-- Footer -->
+  <rect x="20" y="280" width="240" height="80" rx="5" fill="rgba(0,0,0,0.4)"/>
+  <text x="140" y="305" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#d4c5a9">You are on the Fascist team.</text>
+  <text x="140" y="322" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#d4c5a9">Stay hidden. If elected Chancellor</text>
+  <text x="140" y="339" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#d4c5a9">after 3 Fascist policies, you win!</text>
+  <text x="140" y="356" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#a31621">If assassinated, Fascists lose.</text>
+
+  <!-- Corner accents with extra glow -->
+  <g fill="#d4af37">
+    <circle cx="25" cy="25" r="5" filter="url(#glow)"/>
+    <circle cx="255" cy="25" r="5" filter="url(#glow)"/>
+    <circle cx="25" cy="355" r="5" filter="url(#glow)"/>
+    <circle cx="255" cy="355" r="5" filter="url(#glow)"/>
+  </g>
+</svg>
