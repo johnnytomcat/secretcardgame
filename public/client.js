@@ -26,17 +26,22 @@ function updateRoleDisplay() {
 
     if (!roleBadge || !toggleBtn) return;
 
-    if (isRoleHidden) {
+    // Get the original text from attribute or from game state
+    let originalText = roleBadge.getAttribute('data-original-text');
+    if (!originalText && gameState.private?.role) {
+        originalText = gameState.private.role.toUpperCase();
+        roleBadge.setAttribute('data-original-text', originalText);
+    }
+
+    if (isRoleHidden && originalText) {
         roleBadge.classList.add('hidden-role');
-        roleBadge.setAttribute('data-original-text', roleBadge.textContent);
         roleBadge.textContent = 'TAP TO REVEAL';
         toggleBtn.textContent = '👁‍🗨';
         toggleBtn.title = 'Show Role';
         if (teammatesDiv) teammatesDiv.classList.add('hidden-role');
-    } else {
+    } else if (originalText) {
         roleBadge.classList.remove('hidden-role');
-        const originalText = roleBadge.getAttribute('data-original-text');
-        if (originalText) roleBadge.textContent = originalText;
+        roleBadge.textContent = originalText;
         toggleBtn.textContent = '👁';
         toggleBtn.title = 'Hide Role';
         if (teammatesDiv) teammatesDiv.classList.remove('hidden-role');
@@ -959,6 +964,7 @@ function checkUrlForRoomCode() {
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     createBubbles();
+    setupSettingsMenu();
     setupHelpModal();
     setupSoundControls();
     checkUrlForRoomCode();
@@ -2018,14 +2024,41 @@ function createConfetti(winner) {
     }
 }
 
+// Settings menu
+function setupSettingsMenu() {
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsPopup = document.getElementById('settings-popup');
+
+    if (settingsBtn && settingsPopup) {
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsPopup.classList.toggle('hidden');
+            settingsBtn.classList.toggle('active');
+            soundManager.buttonClick();
+        });
+
+        // Close popup when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!settingsPopup.contains(e.target) && e.target !== settingsBtn) {
+                settingsPopup.classList.add('hidden');
+                settingsBtn.classList.remove('active');
+            }
+        });
+    }
+}
+
 // Help modal
 function setupHelpModal() {
     const helpBtn = document.getElementById('help-btn');
     const helpModal = document.getElementById('help-modal');
     const closeBtn = document.getElementById('close-modal');
+    const settingsPopup = document.getElementById('settings-popup');
+    const settingsBtn = document.getElementById('settings-btn');
 
     helpBtn.addEventListener('click', () => {
         helpModal.classList.remove('hidden');
+        settingsPopup.classList.add('hidden');
+        settingsBtn.classList.remove('active');
         soundManager.buttonClick();
     });
     closeBtn.addEventListener('click', () => {
@@ -2045,18 +2078,24 @@ function setupSoundControls() {
     const sfxSlider = document.getElementById('sfx-volume');
 
     if (musicBtn) {
+        const musicLabel = musicBtn.querySelector('.option-label');
         musicBtn.addEventListener('click', () => {
             const enabled = soundManager.toggleMusic();
-            musicBtn.textContent = enabled ? '♪' : '♪̸';
+            if (musicLabel) {
+                musicLabel.textContent = enabled ? 'Music: On' : 'Music: Off';
+            }
             musicBtn.classList.toggle('muted', !enabled);
             soundManager.buttonClick();
         });
     }
 
     if (sfxBtn) {
+        const sfxLabel = sfxBtn.querySelector('.option-label');
         sfxBtn.addEventListener('click', () => {
             const enabled = soundManager.toggleSfx();
-            sfxBtn.textContent = enabled ? '🔊' : '🔇';
+            if (sfxLabel) {
+                sfxLabel.textContent = enabled ? 'Sound: On' : 'Sound: Off';
+            }
             sfxBtn.classList.toggle('muted', !enabled);
             if (enabled) soundManager.buttonClick();
         });

@@ -10,14 +10,24 @@
     <!-- 1945 Wartime Animated Background -->
     <div class="bubbles" id="bubbles"></div>
 
-    <!-- Sound Controls -->
-    <div id="sound-controls" class="sound-controls">
-        <button id="music-btn" class="sound-btn" title="Toggle Music">♪</button>
-        <button id="sfx-btn" class="sound-btn" title="Toggle Sound Effects">🔊</button>
+    <!-- Settings Menu -->
+    <div id="settings-menu" class="settings-menu">
+        <button id="settings-btn" class="settings-btn" title="Settings">⚙</button>
+        <div id="settings-popup" class="settings-popup hidden">
+            <button id="help-btn" class="settings-option">
+                <span class="option-icon">?</span>
+                <span class="option-label">How to Play</span>
+            </button>
+            <button id="music-btn" class="settings-option">
+                <span class="option-icon">♪</span>
+                <span class="option-label">Music: On</span>
+            </button>
+            <button id="sfx-btn" class="settings-option">
+                <span class="option-icon">🔊</span>
+                <span class="option-label">Sound: On</span>
+            </button>
+        </div>
     </div>
-
-    <!-- Help Button -->
-    <button id="help-btn" class="help-btn">?</button>
 
     <!-- Help Modal -->
     <div id="help-modal" class="modal hidden">
