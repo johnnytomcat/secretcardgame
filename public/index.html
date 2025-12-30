@@ -79,6 +79,10 @@
                         <p>Room Code:</p>
                         <h2 id="display-room-code"></h2>
                         <p class="share-hint">Share this code with other players</p>
+                        <div class="qr-code-section">
+                            <p class="qr-hint">Or scan to join:</p>
+                            <div id="qr-code"></div>
+                        </div>
                     </div>
 
                     <div class="players-list">
@@ -228,6 +232,7 @@
     <div id="error-toast" class="toast hidden"></div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="client.js"></script>
 </body>
 </html>

@@ -806,12 +806,29 @@ const AnimationHelper = {
 
 // ==================== END ANIMATION HELPERS ====================
 
+// Check URL parameters for room code (from QR code scan)
+function checkUrlForRoomCode() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('room');
+
+    if (roomCode) {
+        // Auto-fill the room code input
+        const roomCodeInput = document.getElementById('room-code');
+        if (roomCodeInput) {
+            roomCodeInput.value = roomCode.toUpperCase();
+        }
+        // Clear the URL parameter to avoid confusion on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     createBubbles();
     setupHelpModal();
     setupSoundControls();
+    checkUrlForRoomCode();
 });
 
 function setupEventListeners() {
@@ -1084,6 +1101,24 @@ function showRoomSection(code) {
     joinCreateSection.classList.add('hidden');
     roomSection.classList.remove('hidden');
     document.getElementById('display-room-code').textContent = code;
+
+    // Generate QR code for joining
+    const joinUrl = `https://damp-escarpment-89435-1c117ec50e76.herokuapp.com/?room=${code}`;
+    const qrContainer = document.getElementById('qr-code');
+
+    if (typeof QRCode !== 'undefined' && qrContainer) {
+        // Clear any existing QR code
+        qrContainer.innerHTML = '';
+
+        new QRCode(qrContainer, {
+            text: joinUrl,
+            width: 150,
+            height: 150,
+            colorDark: '#1a1a2e',
+            colorLight: '#f5f5dc',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    }
 }
 
 // Game actions

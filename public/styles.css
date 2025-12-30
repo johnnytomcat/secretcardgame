@@ -469,6 +469,28 @@ h2 {
     margin-top: 10px;
 }
 
+.qr-code-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.qr-hint {
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-bottom: 10px;
+}
+
+#qr-code {
+    display: inline-block;
+}
+
+#qr-code img,
+#qr-code canvas {
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
 .players-list {
     margin-bottom: 30px;
     padding: 20px;
@@ -1902,13 +1924,13 @@ h2 {
 /* Tension Building - Hitler Election Danger */
 .hitler-danger-zone {
     position: relative;
-    margin-top: 50px;
+    margin-top: 70px;
 }
 
 .hitler-danger-zone::before {
     content: '⚠️ DANGER: Hitler can win!';
     position: absolute;
-    top: -45px;
+    top: -60px;
     left: 10px;
     right: 10px;
     transform: none;
