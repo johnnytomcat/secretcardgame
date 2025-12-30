@@ -912,7 +912,12 @@ function processAIExecutive(room) {
                     const target = room.players.find(p => p.id === executeTarget);
                     if (target && target.isAlive) {
                         target.isAlive = false;
-                        room.gameState.executedPlayer = { name: target.name, role: target.role };
+                        room.gameState.executedPlayer = {
+                            name: target.name,
+                            role: target.role,
+                            avatar: target.avatar,
+                            avatarColor: target.avatarColor
+                        };
                         room.gameState.executivePower = null;
 
                         if (checkWinCondition(room)) {
@@ -1429,7 +1434,12 @@ io.on('connection', (socket) => {
         if (!target || !target.isAlive) return;
 
         target.isAlive = false;
-        room.gameState.executedPlayer = { name: target.name, role: target.role };
+        room.gameState.executedPlayer = {
+            name: target.name,
+            role: target.role,
+            avatar: target.avatar,
+            avatarColor: target.avatarColor
+        };
         room.gameState.executivePower = null;
 
         if (checkWinCondition(room)) {
