@@ -167,6 +167,16 @@
                         <div id="players-container"></div>
                     </div>
 
+                    <div id="cpu-selector" class="cpu-selector hidden">
+                        <label for="cpu-count">Add CPU Players:</label>
+                        <div class="cpu-controls">
+                            <button id="cpu-minus" class="cpu-btn">−</button>
+                            <span id="cpu-count-display">0</span>
+                            <button id="cpu-plus" class="cpu-btn">+</button>
+                        </div>
+                        <p class="cpu-info">Total players: <span id="total-players">0</span></p>
+                    </div>
+
                     <button id="start-game-btn" class="btn btn-primary hidden">Start Game</button>
                     <p id="waiting-msg" class="waiting-message">Waiting for host to start...</p>
                 </div>

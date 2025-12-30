@@ -13,6 +13,9 @@ let gameState = {
 // Role visibility state (persisted in sessionStorage)
 let isRoleHidden = sessionStorage.getItem('secretCardGame_roleHidden') === 'true';
 
+// CPU count selector state
+let selectedCpuCount = 0;
+
 function toggleRoleVisibility() {
     isRoleHidden = !isRoleHidden;
     sessionStorage.setItem('secretCardGame_roleHidden', isRoleHidden);
@@ -976,6 +979,28 @@ function setupEventListeners() {
     document.getElementById('join-room-btn').addEventListener('click', joinRoom);
     document.getElementById('start-game-btn').addEventListener('click', startGame);
 
+    // CPU selector buttons
+    document.getElementById('cpu-minus').addEventListener('click', () => {
+        const pub = gameState.public;
+        if (!pub) return;
+        const minCpus = Math.max(0, 4 - pub.players.length);
+        if (selectedCpuCount > minCpus) {
+            selectedCpuCount--;
+            renderLobby();
+            soundManager.buttonClick();
+        }
+    });
+    document.getElementById('cpu-plus').addEventListener('click', () => {
+        const pub = gameState.public;
+        if (!pub) return;
+        const maxCpus = 6 - pub.players.length;
+        if (selectedCpuCount < maxCpus) {
+            selectedCpuCount++;
+            renderLobby();
+            soundManager.buttonClick();
+        }
+    });
+
     // Voting buttons
     document.getElementById('vote-yes').addEventListener('click', () => castVote(true));
     document.getElementById('vote-no').addEventListener('click', () => castVote(false));
@@ -1243,7 +1268,7 @@ function joinRoom() {
 }
 
 function startGame() {
-    socket.emit('startGame', gameState.roomCode);
+    socket.emit('startGame', { code: gameState.roomCode, cpuCount: selectedCpuCount });
 }
 
 function showRoomSection(code) {
@@ -1436,7 +1461,8 @@ function renderGameState() {
 
 function renderLobby() {
     const pub = gameState.public;
-    document.getElementById('player-count').textContent = pub.players.length;
+    const humanPlayers = pub.players.length;
+    document.getElementById('player-count').textContent = humanPlayers;
 
     const container = document.getElementById('players-container');
     container.innerHTML = pub.players.map((p, i) => `
@@ -1449,23 +1475,53 @@ function renderLobby() {
         </div>
     `).join('');
 
-    // Show/hide start button - can start with any number of players (AI will fill)
+    // Show/hide start button and CPU selector
     const startBtn = document.getElementById('start-game-btn');
     const waitingMsg = document.getElementById('waiting-msg');
+    const cpuSelector = document.getElementById('cpu-selector');
+
     if (gameState.isHost) {
         startBtn.classList.remove('hidden');
-        const aiNeeded = Math.max(0, 4 - pub.players.length);
-        if (aiNeeded > 0) {
-            waitingMsg.textContent = `${aiNeeded} CPU player${aiNeeded > 1 ? 's' : ''} will be added to fill the game`;
+        cpuSelector.classList.remove('hidden');
+
+        // Calculate min and max CPUs
+        const minCpus = Math.max(0, 4 - humanPlayers);
+        const maxCpus = 6 - humanPlayers;
+
+        // Clamp selected CPU count to valid range
+        selectedCpuCount = Math.max(minCpus, Math.min(maxCpus, selectedCpuCount));
+
+        // Update display
+        updateCpuSelector(humanPlayers, minCpus, maxCpus);
+
+        // Update waiting message
+        const totalPlayers = humanPlayers + selectedCpuCount;
+        if (selectedCpuCount > 0) {
+            waitingMsg.textContent = `${selectedCpuCount} CPU player${selectedCpuCount > 1 ? 's' : ''} will be added`;
         } else {
             waitingMsg.textContent = 'Ready to start!';
         }
         waitingMsg.classList.remove('hidden');
     } else {
         startBtn.classList.add('hidden');
+        cpuSelector.classList.add('hidden');
         waitingMsg.textContent = 'Waiting for host to start...';
         waitingMsg.classList.remove('hidden');
     }
+}
+
+function updateCpuSelector(humanPlayers, minCpus, maxCpus) {
+    const cpuDisplay = document.getElementById('cpu-count-display');
+    const totalDisplay = document.getElementById('total-players');
+    const minusBtn = document.getElementById('cpu-minus');
+    const plusBtn = document.getElementById('cpu-plus');
+
+    cpuDisplay.textContent = selectedCpuCount;
+    totalDisplay.textContent = humanPlayers + selectedCpuCount;
+
+    // Disable buttons at limits
+    minusBtn.disabled = selectedCpuCount <= minCpus;
+    plusBtn.disabled = selectedCpuCount >= maxCpus;
 }
 
 function renderPlayerInfoBar() {

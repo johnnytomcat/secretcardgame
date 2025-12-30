@@ -1139,7 +1139,11 @@ io.on('connection', (socket) => {
     });
 
     // Start the game
-    socket.on('startGame', (code) => {
+    socket.on('startGame', (data) => {
+        // Support both old format (string) and new format (object)
+        const code = typeof data === 'string' ? data : data.code;
+        const cpuCount = typeof data === 'object' ? (data.cpuCount || 0) : 0;
+
         const room = getRoom(code);
         if (!room) return;
 
@@ -1160,8 +1164,13 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Add AI players to reach minimum of 4, max of 6
-        const targetPlayerCount = Math.min(6, Math.max(4, room.players.length));
+        // Calculate target player count based on host's CPU selection
+        const humanPlayers = room.players.length;
+        const minCpus = Math.max(0, 4 - humanPlayers);
+        const maxCpus = 6 - humanPlayers;
+        const validCpuCount = Math.max(minCpus, Math.min(maxCpus, cpuCount));
+        const targetPlayerCount = humanPlayers + validCpuCount;
+
         addAIPlayers(room, targetPlayerCount);
 
         // Final validation that we have a valid player count for role configuration
