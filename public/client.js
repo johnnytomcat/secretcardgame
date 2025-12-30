@@ -10,6 +10,106 @@ let gameState = {
     private: null
 };
 
+// ==================== SESSION MANAGEMENT ====================
+// Generate a unique session ID that persists across page refreshes
+function getOrCreateSessionId() {
+    let sessionId = localStorage.getItem('secretCardGame_sessionId');
+    if (!sessionId) {
+        sessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+        localStorage.setItem('secretCardGame_sessionId', sessionId);
+    }
+    return sessionId;
+}
+
+function saveSession(roomCode, playerName, isHost) {
+    const session = {
+        sessionId: getOrCreateSessionId(),
+        roomCode: roomCode,
+        playerName: playerName,
+        isHost: isHost,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('secretCardGame_session', JSON.stringify(session));
+}
+
+function getSavedSession() {
+    try {
+        const session = JSON.parse(localStorage.getItem('secretCardGame_session'));
+        if (session) {
+            // Session expires after 2 hours
+            const twoHours = 2 * 60 * 60 * 1000;
+            if (Date.now() - session.timestamp < twoHours) {
+                return session;
+            }
+            clearSession();
+        }
+    } catch (e) {
+        clearSession();
+    }
+    return null;
+}
+
+function clearSession() {
+    localStorage.removeItem('secretCardGame_session');
+}
+
+// Connection status helpers
+function showConnectionStatus(message, isDisconnected = false) {
+    const statusEl = document.getElementById('connection-status');
+    const messageEl = document.getElementById('connection-message');
+    if (statusEl && messageEl) {
+        messageEl.textContent = message;
+        statusEl.classList.remove('hidden');
+        statusEl.classList.toggle('disconnected', isDisconnected);
+    }
+}
+
+function hideConnectionStatus() {
+    const statusEl = document.getElementById('connection-status');
+    if (statusEl) {
+        statusEl.classList.add('hidden');
+    }
+}
+
+// Attempt to reconnect when socket connects
+socket.on('connect', () => {
+    const savedSession = getSavedSession();
+    if (savedSession) {
+        showConnectionStatus('Reconnecting to game...');
+        console.log('Attempting to reconnect to room:', savedSession.roomCode);
+        socket.emit('reconnectToGame', {
+            sessionId: savedSession.sessionId,
+            roomCode: savedSession.roomCode,
+            playerName: savedSession.playerName
+        });
+    } else {
+        hideConnectionStatus();
+    }
+});
+
+socket.on('disconnect', () => {
+    const savedSession = getSavedSession();
+    if (savedSession) {
+        showConnectionStatus('Connection lost. Reconnecting...', true);
+    }
+});
+
+socket.on('reconnectSuccess', ({ code, playerId, isHost }) => {
+    console.log('Reconnected successfully to room:', code);
+    gameState.playerId = playerId;
+    gameState.roomCode = code;
+    gameState.isHost = isHost;
+    hideConnectionStatus();
+    showRoomSection(code);
+});
+
+socket.on('reconnectFailed', ({ message }) => {
+    console.log('Reconnect failed:', message);
+    hideConnectionStatus();
+    clearSession();
+});
+// ==================== END SESSION MANAGEMENT ====================
+
 // Helper function to render player avatar HTML
 function renderPlayerAvatar(player, size = 'medium') {
     const sizeClass = `avatar-${size}`;
@@ -858,17 +958,21 @@ function setupEventListeners() {
 
 // Socket event handlers
 socket.on('roomCreated', ({ code, playerId }) => {
+    const playerName = document.getElementById('player-name').value.trim();
     gameState.playerId = playerId;
     gameState.roomCode = code;
     gameState.isHost = true;
+    saveSession(code, playerName, true);
     showRoomSection(code);
     soundManager.joinRoom();
 });
 
 socket.on('roomJoined', ({ code, playerId }) => {
+    const playerName = document.getElementById('player-name').value.trim();
     gameState.playerId = playerId;
     gameState.roomCode = code;
     gameState.isHost = false;
+    saveSession(code, playerName, false);
     showRoomSection(code);
     soundManager.joinRoom();
 });
@@ -1076,7 +1180,7 @@ function createRoom() {
         showError('Please enter your name');
         return;
     }
-    socket.emit('createRoom', name);
+    socket.emit('createRoom', { playerName: name, sessionId: getOrCreateSessionId() });
 }
 
 function joinRoom() {
@@ -1090,7 +1194,7 @@ function joinRoom() {
         showError('Please enter a valid room code');
         return;
     }
-    socket.emit('joinRoom', { code, playerName: name });
+    socket.emit('joinRoom', { code, playerName: name, sessionId: getOrCreateSessionId() });
 }
 
 function startGame() {
@@ -1655,6 +1759,9 @@ function renderExecutionResultPhase() {
 function renderGameOverPhase() {
     const pub = gameState.public;
     document.getElementById('gameover-phase').classList.remove('hidden');
+
+    // Clear session since game is over
+    clearSession();
 
     document.getElementById('winner-title').textContent =
         `${pub.winner?.toUpperCase()}S WIN!`;

@@ -571,6 +571,7 @@ h2 {
     color: var(--cream);
     opacity: 0.7;
     animation: pulse 2s ease-in-out infinite;
+    margin-top: 20px;
 }
 
 /* Player Info Bar */
@@ -1421,6 +1422,47 @@ h2 {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
     }
+}
+
+/* Connection Status Indicator */
+.connection-status {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(45, 45, 45, 0.95), rgba(26, 26, 26, 0.98));
+    color: var(--gold);
+    padding: 12px 24px;
+    border-radius: 5px;
+    border: 2px solid var(--gold);
+    font-weight: bold;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.connection-spinner {
+    width: 18px;
+    height: 18px;
+    border: 3px solid var(--iron-gray);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.connection-status.disconnected {
+    border-color: var(--blood-red);
+    color: var(--blood-red);
+}
+
+.connection-status.disconnected .connection-spinner {
+    border-top-color: var(--blood-red);
 }
 
 /* Sound Controls */

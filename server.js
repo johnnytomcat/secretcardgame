@@ -75,7 +75,7 @@ function getNextAvatar(room) {
     return { index: 0, ...PLAYER_AVATARS[0] };
 }
 
-function createRoom(hostId, hostName) {
+function createRoom(hostId, hostName, sessionId = null) {
     let code;
     do {
         code = generateRoomCode();
@@ -88,10 +88,11 @@ function createRoom(hostId, hostName) {
         hostId,
         players: [{
             id: hostId,
-            name: firstAvatar.name,
+            name: hostName || firstAvatar.name,
             avatar: firstAvatar.emoji,
             avatarColor: firstAvatar.color,
             avatarIndex: 0,
+            sessionId: sessionId,
             role: null,
             isAlive: true,
             hasVoted: false,
@@ -1038,15 +1039,19 @@ io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
 
     // Create a new room
-    socket.on('createRoom', (playerName) => {
-        const room = createRoom(socket.id, playerName);
+    socket.on('createRoom', (data) => {
+        // Support both old format (string) and new format (object)
+        const playerName = typeof data === 'string' ? data : data.playerName;
+        const sessionId = typeof data === 'object' ? data.sessionId : null;
+
+        const room = createRoom(socket.id, playerName, sessionId);
         socket.join(room.code);
         socket.emit('roomCreated', { code: room.code, playerId: socket.id });
         broadcastGameState(room);
     });
 
     // Join an existing room
-    socket.on('joinRoom', ({ code, playerName }) => {
+    socket.on('joinRoom', ({ code, playerName, sessionId }) => {
         const room = getRoom(code.toUpperCase());
 
         if (!room) {
@@ -1067,10 +1072,11 @@ io.on('connection', (socket) => {
         const avatar = getNextAvatar(room);
         room.players.push({
             id: socket.id,
-            name: avatar.name,
+            name: playerName || avatar.name,
             avatar: avatar.emoji,
             avatarColor: avatar.color,
             avatarIndex: avatar.index,
+            sessionId: sessionId,
             role: null,
             isAlive: true,
             hasVoted: false,
@@ -1079,6 +1085,54 @@ io.on('connection', (socket) => {
 
         socket.join(code.toUpperCase());
         socket.emit('roomJoined', { code: room.code, playerId: socket.id });
+        broadcastGameState(room);
+    });
+
+    // Reconnect to an existing game
+    socket.on('reconnectToGame', ({ sessionId, roomCode, playerName }) => {
+        const room = getRoom(roomCode);
+
+        if (!room) {
+            socket.emit('reconnectFailed', { message: 'Room not found' });
+            return;
+        }
+
+        // Find the player by their avatar name (which is their display name)
+        const player = room.players.find(p => p.name === playerName || p.sessionId === sessionId);
+
+        if (!player) {
+            socket.emit('reconnectFailed', { message: 'Player not found in room' });
+            return;
+        }
+
+        // Check if player is AI (can't reconnect as AI)
+        if (player.isAI) {
+            socket.emit('reconnectFailed', { message: 'Cannot reconnect as AI player' });
+            return;
+        }
+
+        // Update the player's socket ID and mark as connected
+        const oldSocketId = player.id;
+        player.id = socket.id;
+        player.sessionId = sessionId;
+        player.disconnected = false;
+
+        // Update host ID if this was the host
+        if (room.hostId === oldSocketId) {
+            room.hostId = socket.id;
+        }
+
+        // Join the socket room
+        socket.join(roomCode.toUpperCase());
+
+        // Send success response
+        socket.emit('reconnectSuccess', {
+            code: room.code,
+            playerId: socket.id,
+            isHost: room.hostId === socket.id
+        });
+
+        console.log(`Player ${playerName} reconnected to room ${roomCode}`);
         broadcastGameState(room);
     });
 
