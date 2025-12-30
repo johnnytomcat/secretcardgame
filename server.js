@@ -201,7 +201,9 @@ function getPublicGameState(room) {
             avatarColor: p.avatarColor,
             isAlive: p.isAlive,
             hasVoted: p.hasVoted,
-            isAI: p.isAI || false
+            isAI: p.isAI || false,
+            // Reveal roles when game is over
+            role: room.gameState.phase === 'gameover' ? p.role : undefined
         })),
         votes: room.gameState.votes,
         policyCount: room.gameState.currentPolicies?.length || 0

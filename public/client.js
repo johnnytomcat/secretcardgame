@@ -10,6 +10,39 @@ let gameState = {
     private: null
 };
 
+// Role visibility state (persisted in sessionStorage)
+let isRoleHidden = sessionStorage.getItem('secretCardGame_roleHidden') === 'true';
+
+function toggleRoleVisibility() {
+    isRoleHidden = !isRoleHidden;
+    sessionStorage.setItem('secretCardGame_roleHidden', isRoleHidden);
+    updateRoleDisplay();
+}
+
+function updateRoleDisplay() {
+    const roleBadge = document.getElementById('your-role-badge');
+    const toggleBtn = document.getElementById('toggle-role-btn');
+    const teammatesDiv = document.getElementById('teammates-info');
+
+    if (!roleBadge || !toggleBtn) return;
+
+    if (isRoleHidden) {
+        roleBadge.classList.add('hidden-role');
+        roleBadge.setAttribute('data-original-text', roleBadge.textContent);
+        roleBadge.textContent = 'TAP TO REVEAL';
+        toggleBtn.textContent = '👁‍🗨';
+        toggleBtn.title = 'Show Role';
+        if (teammatesDiv) teammatesDiv.classList.add('hidden-role');
+    } else {
+        roleBadge.classList.remove('hidden-role');
+        const originalText = roleBadge.getAttribute('data-original-text');
+        if (originalText) roleBadge.textContent = originalText;
+        toggleBtn.textContent = '👁';
+        toggleBtn.title = 'Hide Role';
+        if (teammatesDiv) teammatesDiv.classList.remove('hidden-role');
+    }
+}
+
 // ==================== SESSION MANAGEMENT ====================
 // Generate a unique session ID that persists across page refreshes
 function getOrCreateSessionId() {
@@ -947,6 +980,12 @@ function setupEventListeners() {
     document.getElementById('continue-from-chaos').addEventListener('click', continueFromChaos);
     document.getElementById('continue-from-execution').addEventListener('click', continueFromExecution);
 
+    // Role visibility toggle
+    document.getElementById('toggle-role-btn').addEventListener('click', toggleRoleVisibility);
+    document.getElementById('your-role-badge').addEventListener('click', () => {
+        if (isRoleHidden) toggleRoleVisibility();
+    });
+
     // Enter key for inputs
     document.getElementById('player-name').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') document.getElementById('create-room-btn').click();
@@ -1419,8 +1458,11 @@ function renderPlayerInfoBar() {
 
     const roleBadge = document.getElementById('your-role-badge');
     if (priv?.role) {
-        roleBadge.textContent = priv.role.toUpperCase();
+        roleBadge.setAttribute('data-original-text', priv.role.toUpperCase());
         roleBadge.className = `role-badge ${priv.role}`;
+        if (!isRoleHidden) {
+            roleBadge.textContent = priv.role.toUpperCase();
+        }
     }
 
     // Show teammates for fascists
@@ -1431,6 +1473,9 @@ function renderPlayerInfoBar() {
     } else {
         teammatesDiv.innerHTML = '';
     }
+
+    // Apply hidden state
+    updateRoleDisplay();
 }
 
 function renderElectionPhase() {
@@ -1500,9 +1545,19 @@ function renderVotingPhase() {
         votingArea.classList.remove('heartbeat-pulse');
     }
 
-    document.getElementById('vote-info').innerHTML = hitlerDanger
-        ? `<span style="color: var(--blood-red);">DANGER ZONE!</span><br>President: ${renderPlayerName(president)} | Chancellor: ${renderPlayerName(chancellor)}`
-        : `President: ${renderPlayerName(president)} | Chancellor: ${renderPlayerName(chancellor)}`;
+    document.getElementById('vote-info').innerHTML = `
+        ${hitlerDanger ? '<div class="danger-zone-warning">DANGER ZONE!</div>' : ''}
+        <div class="government-ticket">
+            <div class="ticket-role">
+                <span class="ticket-label">President</span>
+                <span class="ticket-player">${renderPlayerName(president)}</span>
+            </div>
+            <div class="ticket-role">
+                <span class="ticket-label">Chancellor</span>
+                <span class="ticket-player">${renderPlayerName(chancellor)}</span>
+            </div>
+        </div>
+    `;
 
     const myPlayer = pub.players.find(p => p.id === gameState.playerId);
     if (myPlayer?.hasVoted) {

@@ -27,26 +27,89 @@
 
             <div class="help-section">
                 <h3>Overview</h3>
-                <p>A social deduction game where Liberals try to stop the Fascists from gaining power.</p>
+                <p>A social deduction game set in 1930s Germany. Liberals work together to stop the Fascists from seizing power, while Fascists secretly conspire to elect their leader.</p>
             </div>
 
             <div class="help-section">
                 <h3>Teams & Roles</h3>
+                <p><strong>Role Distribution (4-6 players):</strong></p>
                 <ul>
-                    <li><strong>Liberals:</strong> Enact 5 Liberal policies or eliminate Hitler.</li>
-                    <li><strong>Fascists:</strong> Enact 6 Fascist policies or elect Hitler as Chancellor.</li>
-                    <li><strong>Hitler:</strong> Must avoid suspicion and survive.</li>
+                    <li><strong>4 players:</strong> 2 Liberals, 1 Fascist, 1 Hitler</li>
+                    <li><strong>5 players:</strong> 3 Liberals, 1 Fascist, 1 Hitler</li>
+                    <li><strong>6 players:</strong> 4 Liberals, 1 Fascist, 1 Hitler</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>Team Knowledge:</strong></p>
+                <ul>
+                    <li><strong>Liberals:</strong> Don't know anyone's role</li>
+                    <li><strong>Fascists:</strong> Know who Hitler is</li>
+                    <li><strong>Hitler:</strong> Doesn't know who the Fascists are</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>How to Win</h3>
+                <p><strong>Liberals Win If:</strong></p>
+                <ul>
+                    <li>5 Liberal policies are enacted, OR</li>
+                    <li>Hitler is executed</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>Fascists Win If:</strong></p>
+                <ul>
+                    <li>6 Fascist policies are enacted, OR</li>
+                    <li>Hitler is elected Chancellor after 3+ Fascist policies are enacted</li>
                 </ul>
             </div>
 
             <div class="help-section">
                 <h3>Game Flow</h3>
                 <ol>
-                    <li><strong>Election:</strong> President nominates a Chancellor.</li>
-                    <li><strong>Voting:</strong> All players vote on the government.</li>
-                    <li><strong>Legislative:</strong> President and Chancellor enact a policy.</li>
-                    <li><strong>Executive:</strong> President may gain special powers.</li>
+                    <li><strong>Election:</strong> The President nominates a Chancellor candidate.</li>
+                    <li><strong>Voting:</strong> All players vote JA (Yes) or NEIN (No). Majority wins.</li>
+                    <li><strong>Legislative Session:</strong> If the vote passes:
+                        <ul>
+                            <li>President draws 3 policies, passes 2 to Chancellor</li>
+                            <li>Chancellor enacts 1 policy</li>
+                        </ul>
+                    </li>
+                    <li><strong>Executive Action:</strong> The President may gain special powers (see below).</li>
+                    <li><strong>Next Round:</strong> Presidency passes to the next player.</li>
                 </ol>
+            </div>
+
+            <div class="help-section">
+                <h3>Executive Powers</h3>
+                <p>When Fascist policies are enacted, the President gains powers:</p>
+                <ul>
+                    <li><strong>3rd Fascist Policy:</strong> Examine top 3 cards in the deck</li>
+                    <li><strong>4th Fascist Policy:</strong> Execute a player</li>
+                    <li><strong>5th Fascist Policy:</strong> Execute a player</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>Execution Rules:</strong></p>
+                <ul>
+                    <li>The President must choose a player to execute</li>
+                    <li>Executed players are eliminated and cannot vote or hold office</li>
+                    <li>If Hitler is executed, Liberals win immediately!</li>
+                    <li>The executed player's role is revealed to all</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Special Rules</h3>
+                <ul>
+                    <li><strong>Term Limits:</strong> The previous President and Chancellor cannot be nominated as Chancellor</li>
+                    <li><strong>Hitler Danger Zone:</strong> After 3 Fascist policies, electing Hitler as Chancellor wins the game for Fascists</li>
+                    <li><strong>Election Tracker:</strong> If 3 governments fail in a row, the top policy is automatically enacted (chaos!)</li>
+                    <li><strong>Deck Reshuffle:</strong> When fewer than 3 cards remain, the deck is reshuffled</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>Strategy Tips</h3>
+                <ul>
+                    <li><strong>Liberals:</strong> Pay attention to voting patterns and policy claims. Trust no one completely!</li>
+                    <li><strong>Fascists:</strong> Blend in with Liberals. Create confusion and distrust.</li>
+                    <li><strong>Hitler:</strong> Act like a Liberal. Your team wins if you become Chancellor late game.</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -103,6 +166,7 @@
                 <div class="your-role">
                     <span id="your-name"></span>
                     <span id="your-role-badge" class="role-badge"></span>
+                    <button id="toggle-role-btn" class="toggle-role-btn" title="Hide/Show Role">👁</button>
                 </div>
                 <div class="teammates-info" id="teammates-info"></div>
             </div>
