@@ -1442,6 +1442,51 @@ io.on('connection', (socket) => {
         handleContinueFromExecution(room);
     });
 
+    // End game (host only) - return to lobby
+    socket.on('endGame', (code) => {
+        const room = getRoom(code);
+        if (!room) return;
+
+        // Only host can end the game
+        if (socket.id !== room.hostId) {
+            socket.emit('error', { message: 'Only the host can end the game' });
+            return;
+        }
+
+        // Reset game state to lobby
+        room.gameState = {
+            phase: 'lobby',
+            currentPresidentIndex: 0,
+            chancellorCandidateId: null,
+            currentChancellorId: null,
+            previousPresidentId: null,
+            previousChancellorId: null,
+            liberalPolicies: 0,
+            fascistPolicies: 0,
+            electionTracker: 0,
+            policyDeck: [],
+            discardPile: [],
+            currentPolicies: [],
+            specialElectionNextIndex: null,
+            votes: [],
+            executivePower: null,
+            winner: null,
+            winReason: null
+        };
+
+        // Reset player states but keep them in the room
+        room.players = room.players.filter(p => !p.isAI).map(p => ({
+            ...p,
+            role: null,
+            isAlive: true,
+            hasVoted: false,
+            vote: null
+        }));
+
+        console.log(`Game ended by host in room ${code}`);
+        broadcastGameState(room);
+    });
+
     // Handle disconnection
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);

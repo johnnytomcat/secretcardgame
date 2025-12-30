@@ -1369,8 +1369,21 @@ function renderGameState() {
     const { public: pub, private: priv } = gameState;
     if (!pub) return;
 
+    // Show/hide end game button for host
+    const endGameBtn = document.getElementById('end-game-btn');
+    if (endGameBtn) {
+        if (gameState.isHost && pub.phase !== 'lobby' && pub.phase !== 'gameover') {
+            endGameBtn.classList.remove('hidden');
+        } else {
+            endGameBtn.classList.add('hidden');
+        }
+    }
+
     // Lobby phase
     if (pub.phase === 'lobby') {
+        // Switch back to lobby screen
+        gameScreen.classList.remove('active');
+        lobbyScreen.classList.add('active');
         renderLobby();
         return;
     }
@@ -2028,6 +2041,7 @@ function createConfetti(winner) {
 function setupSettingsMenu() {
     const settingsBtn = document.getElementById('settings-btn');
     const settingsPopup = document.getElementById('settings-popup');
+    const endGameBtn = document.getElementById('end-game-btn');
 
     if (settingsBtn && settingsPopup) {
         settingsBtn.addEventListener('click', (e) => {
@@ -2042,6 +2056,18 @@ function setupSettingsMenu() {
             if (!settingsPopup.contains(e.target) && e.target !== settingsBtn) {
                 settingsPopup.classList.add('hidden');
                 settingsBtn.classList.remove('active');
+            }
+        });
+    }
+
+    // End game button (host only)
+    if (endGameBtn) {
+        endGameBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to end the game? All players will be returned to the lobby.')) {
+                socket.emit('endGame', gameState.roomCode);
+                settingsPopup.classList.add('hidden');
+                settingsBtn.classList.remove('active');
+                soundManager.buttonClick();
             }
         });
     }
