@@ -1105,6 +1105,37 @@ function continueFromExecution() {
     socket.emit('continueFromExecution', gameState.roomCode);
 }
 
+// Track selected policies for president multi-select
+let presidentSelectedIndices = [];
+
+function presidentSelectPolicy(index) {
+    const cards = document.querySelectorAll('#president-policies .policy-card');
+
+    if (presidentSelectedIndices.includes(index)) {
+        // Deselect
+        presidentSelectedIndices = presidentSelectedIndices.filter(i => i !== index);
+        cards[index].classList.remove('selected');
+        soundManager.cardSelect();
+    } else if (presidentSelectedIndices.length < 2) {
+        // Select
+        presidentSelectedIndices.push(index);
+        cards[index].classList.add('selected');
+        soundManager.cardSelect();
+
+        // If 2 selected, submit
+        if (presidentSelectedIndices.length === 2) {
+            setTimeout(() => {
+                socket.emit('presidentSelectPolicies', {
+                    code: gameState.roomCode,
+                    selectedIndices: presidentSelectedIndices
+                });
+                presidentSelectedIndices = [];
+            }, 300); // Small delay for visual feedback
+        }
+    }
+}
+
+// Legacy function for backwards compatibility
 function presidentDiscard(index) {
     socket.emit('presidentDiscard', { code: gameState.roomCode, discardIndex: index });
     soundManager.cardSelect();
@@ -1367,12 +1398,15 @@ function renderLegislativePhase() {
 
     if (pub.phase === 'legislative-president') {
         if (priv?.isPresident && priv?.policies) {
+            // Reset selection state
+            presidentSelectedIndices = [];
+
             document.getElementById('legislative-president-phase').classList.remove('hidden');
             document.getElementById('legislative-president-info').textContent =
-                'Choose a policy to DISCARD (2 will go to Chancellor):';
+                'Select 2 policies to PASS to Chancellor:';
 
             document.getElementById('president-policies').innerHTML = priv.policies.map((p, i) => `
-                <div class="policy-card ${p}" onclick="presidentDiscard(${i})">
+                <div class="policy-card ${p}" onclick="presidentSelectPolicy(${i})">
                     ${p.toUpperCase()}
                 </div>
             `).join('');

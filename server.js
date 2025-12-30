@@ -471,30 +471,60 @@ class AIBrain {
         return validCandidates[Math.floor(Math.random() * validCandidates.length)].id;
     }
 
-    // Choose which policy to discard as president
-    choosePresidentDiscard(policies) {
-        const liberalCount = policies.filter(p => p === 'liberal').length;
-        const fascistCount = policies.filter(p => p === 'fascist').length;
+    // Choose which 2 policies to pass to chancellor as president
+    choosePresidentPolicies(policies) {
+        // Returns array of 2 indices to pass (not discard)
+        const allIndices = [0, 1, 2];
 
         if (this.isFascist) {
-            const liberalIndex = policies.indexOf('liberal');
-            if (liberalIndex !== -1) {
-                // Usually discard liberal, but sometimes pass it to avoid suspicion
-                if (Math.random() > 0.15) { // 85% discard liberal (was 100%)
-                    return liberalIndex;
+            // Fascist strategy: prefer passing fascist policies
+            const fascistIndices = policies.map((p, i) => p === 'fascist' ? i : -1).filter(i => i !== -1);
+            const liberalIndices = policies.map((p, i) => p === 'liberal' ? i : -1).filter(i => i !== -1);
+
+            // If 2+ fascist, pass 2 fascist (but sometimes include a liberal to avoid suspicion)
+            if (fascistIndices.length >= 2) {
+                if (Math.random() > 0.15) { // 85% pass 2 fascist
+                    return fascistIndices.slice(0, 2);
+                } else if (liberalIndices.length > 0) {
+                    // Pass 1 fascist + 1 liberal to seem fair
+                    return [fascistIndices[0], liberalIndices[0]];
                 }
             }
-            // All fascist or chose to keep liberal - discard random
-            return Math.floor(Math.random() * policies.length);
-        } else {
-            // Liberal: discard fascist if possible
-            const fascistIndex = policies.indexOf('fascist');
-            if (fascistIndex !== -1) {
-                return fascistIndex;
+
+            // If 1 fascist + 2 liberal, usually pass the fascist + 1 liberal
+            if (fascistIndices.length === 1 && liberalIndices.length === 2) {
+                if (Math.random() > 0.2) { // 80% include the fascist
+                    return [fascistIndices[0], liberalIndices[0]];
+                }
             }
-            // All liberal, discard random
-            return Math.floor(Math.random() * policies.length);
+
+            // Fallback: pass first 2
+            return [0, 1];
+        } else {
+            // Liberal strategy: prefer passing liberal policies
+            const liberalIndices = policies.map((p, i) => p === 'liberal' ? i : -1).filter(i => i !== -1);
+            const fascistIndices = policies.map((p, i) => p === 'fascist' ? i : -1).filter(i => i !== -1);
+
+            // If 2+ liberal, pass 2 liberal
+            if (liberalIndices.length >= 2) {
+                return liberalIndices.slice(0, 2);
+            }
+
+            // If 1 liberal, pass that liberal + 1 fascist (forced)
+            if (liberalIndices.length === 1) {
+                return [liberalIndices[0], fascistIndices[0]];
+            }
+
+            // All fascist - pass any 2
+            return [0, 1];
         }
+    }
+
+    // Legacy: Choose which policy to discard as president (for backwards compatibility)
+    choosePresidentDiscard(policies) {
+        const selectedIndices = this.choosePresidentPolicies(policies);
+        // Return the index that wasn't selected
+        return [0, 1, 2].find(i => !selectedIndices.includes(i));
     }
 
     // Choose which policy to enact as chancellor
@@ -648,7 +678,7 @@ function processAIActions(room) {
                 if (room.gameState.phase === 'vote-result') {
                     handleContinueFromVote(room);
                 }
-            }, 2000);
+            }, 5000);
             break;
         case 'legislative-president':
             processAIPresidentLegislative(room);
@@ -742,10 +772,15 @@ function processAIPresidentLegislative(room) {
         if (room.gameState.phase !== 'legislative-president') return;
 
         const ai = new AIBrain(room, president);
-        const discardIndex = ai.choosePresidentDiscard(room.gameState.currentPolicies);
+        const selectedIndices = ai.choosePresidentPolicies(room.gameState.currentPolicies);
 
-        const discarded = room.gameState.currentPolicies.splice(discardIndex, 1)[0];
+        // Find the index that wasn't selected (the one to discard)
+        const discardIndex = [0, 1, 2].find(i => !selectedIndices.includes(i));
+        const discarded = room.gameState.currentPolicies[discardIndex];
         room.gameState.discardPile.push(discarded);
+
+        // Keep only the selected policies
+        room.gameState.currentPolicies = selectedIndices.map(i => room.gameState.currentPolicies[i]);
         room.gameState.phase = 'legislative-chancellor';
 
         broadcastGameState(room);
@@ -1126,7 +1161,32 @@ io.on('connection', (socket) => {
         handleContinueFromChaos(room);
     });
 
-    // President discards policy
+    // President selects 2 policies to pass to chancellor
+    socket.on('presidentSelectPolicies', ({ code, selectedIndices }) => {
+        const room = getRoom(code);
+        if (!room || room.gameState.phase !== 'legislative-president') return;
+
+        const currentPresident = room.players[room.gameState.currentPresidentIndex];
+        if (socket.id !== currentPresident.id) return;
+
+        // Validate: must select exactly 2 policies
+        if (!selectedIndices || selectedIndices.length !== 2) return;
+
+        // Find the index that wasn't selected (the one to discard)
+        const discardIndex = [0, 1, 2].find(i => !selectedIndices.includes(i));
+        const discarded = room.gameState.currentPolicies[discardIndex];
+        room.gameState.discardPile.push(discarded);
+
+        // Keep only the selected policies
+        room.gameState.currentPolicies = selectedIndices.map(i => room.gameState.currentPolicies[i]);
+        room.gameState.phase = 'legislative-chancellor';
+
+        broadcastGameState(room);
+        // Trigger AI chancellor if needed
+        processAIActions(room);
+    });
+
+    // Legacy support: President discards policy (single index)
     socket.on('presidentDiscard', ({ code, discardIndex }) => {
         const room = getRoom(code);
         if (!room || room.gameState.phase !== 'legislative-president') return;

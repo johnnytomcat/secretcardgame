@@ -1122,6 +1122,18 @@ h2 {
     box-shadow: 0 5px 20px rgba(139, 0, 0, 0.4);
 }
 
+.policy-card.selected {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 30px rgba(201, 162, 39, 0.6), 0 0 50px rgba(201, 162, 39, 0.3) !important;
+    transform: translateY(-15px) scale(1.05);
+    animation: card-selected-glow 1s ease-in-out infinite;
+}
+
+@keyframes card-selected-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(201, 162, 39, 0.5), 0 0 40px rgba(201, 162, 39, 0.2); }
+    50% { box-shadow: 0 0 35px rgba(201, 162, 39, 0.8), 0 0 60px rgba(201, 162, 39, 0.4); }
+}
+
 /* Policy Result Display */
 #policy-result-content {
     padding: 30px;

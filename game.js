@@ -476,9 +476,9 @@ function startLegislativePhase() {
     gameState.currentPolicies = drawPolicies(3);
 
     document.getElementById('legislative-instruction').textContent =
-        `${gameState.players[gameState.currentPresidentIndex].name} (President): Choose 2 policies to pass to the Chancellor`;
+        `${gameState.players[gameState.currentPresidentIndex].name} (President): Select 2 policies to pass to the Chancellor`;
 
-    renderPolicyCards(gameState.currentPolicies, selectPresidentPolicies);
+    renderPolicyCards(gameState.currentPolicies, selectPresidentPolicies, true);
 }
 
 function drawPolicies(count) {
@@ -498,28 +498,65 @@ function drawPolicies(count) {
     return policies;
 }
 
-function renderPolicyCards(policies, callback) {
+function renderPolicyCards(policies, callback, multiSelect = false) {
     const container = document.getElementById('policy-cards');
     container.innerHTML = '';
+
+    const selectedIndices = [];
 
     policies.forEach((policy, index) => {
         const card = document.createElement('div');
         card.className = `policy-card hidden-card`;
+        card.dataset.index = index;
         const keyNum = index + 1;
         card.innerHTML = `<div class="key-indicator large-key">[${keyNum}]</div>`;
         container.appendChild(card);
     });
 
-    // Setup keyboard selection for policies
-    setupKeyboardSelection(policies, (policy, index) => {
-        clearKeyboardHandler();
-        callback(index);
-    });
+    if (multiSelect) {
+        // Multi-select mode: select 2 cards to pass
+        gameState.keyboardHandler = (e) => {
+            const key = e.key;
+            const numKey = parseInt(key);
+
+            if (!isNaN(numKey) && numKey >= 1 && numKey <= policies.length) {
+                e.preventDefault();
+                const index = numKey - 1;
+                const cards = container.querySelectorAll('.policy-card');
+
+                if (selectedIndices.includes(index)) {
+                    // Deselect
+                    selectedIndices.splice(selectedIndices.indexOf(index), 1);
+                    cards[index].classList.remove('selected');
+                } else if (selectedIndices.length < 2) {
+                    // Select
+                    selectedIndices.push(index);
+                    cards[index].classList.add('selected');
+
+                    if (selectedIndices.length === 2) {
+                        clearKeyboardHandler();
+                        callback(selectedIndices);
+                    }
+                }
+            }
+        };
+    } else {
+        // Single select mode
+        setupKeyboardSelection(policies, (policy, index) => {
+            clearKeyboardHandler();
+            callback(index);
+        });
+    }
 }
 
-function selectPresidentPolicies(discardIndex) {
-    const discardedPolicy = gameState.currentPolicies.splice(discardIndex, 1)[0];
+function selectPresidentPolicies(selectedIndices) {
+    // Find the index that wasn't selected (the one to discard)
+    const discardIndex = [0, 1, 2].find(i => !selectedIndices.includes(i));
+    const discardedPolicy = gameState.currentPolicies[discardIndex];
     gameState.discardPile.push(discardedPolicy);
+
+    // Keep only the selected policies
+    gameState.currentPolicies = selectedIndices.map(i => gameState.currentPolicies[i]);
 
     // Chancellor's turn
     document.getElementById('legislative-instruction').textContent =
