@@ -917,6 +917,111 @@ h2 {
     100% { transform: scale(1); opacity: 1; }
 }
 
+/* Player Avatars */
+.player-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    vertical-align: middle;
+}
+
+.avatar-small {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+}
+
+.avatar-medium {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+}
+
+.avatar-large {
+    width: 60px;
+    height: 60px;
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.player-name-text {
+    vertical-align: middle;
+    margin-left: 8px;
+}
+
+/* Vote Results with Avatars */
+.vote-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.vote-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    animation: vote-result-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) backwards;
+    transition: all 0.3s;
+}
+
+.vote-result .voter-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.vote-result.vote-yes {
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.6), rgba(30, 58, 95, 0.3));
+    border: 2px solid var(--liberal-blue);
+    box-shadow: 0 2px 10px rgba(30, 58, 95, 0.3);
+}
+
+.vote-result.vote-no {
+    background: linear-gradient(135deg, rgba(139, 0, 0, 0.6), rgba(139, 0, 0, 0.3));
+    border: 2px solid var(--deep-red);
+    box-shadow: 0 2px 10px rgba(139, 0, 0, 0.3);
+}
+
+.vote-result:nth-child(1) { animation-delay: 0.1s; }
+.vote-result:nth-child(2) { animation-delay: 0.15s; }
+.vote-result:nth-child(3) { animation-delay: 0.2s; }
+.vote-result:nth-child(4) { animation-delay: 0.25s; }
+.vote-result:nth-child(5) { animation-delay: 0.3s; }
+.vote-result:nth-child(6) { animation-delay: 0.35s; }
+
+@keyframes vote-result-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.vote-choice {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 1.1em;
+    padding: 4px 12px;
+    border-radius: 4px;
+}
+
+.vote-result.vote-yes .vote-choice {
+    background: var(--liberal-blue);
+    color: var(--cream);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.vote-result.vote-no .vote-choice {
+    background: var(--deep-red);
+    color: var(--cream);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
 /* Player Selection */
 .player-grid {
     display: grid;
@@ -1797,24 +1902,26 @@ h2 {
 /* Tension Building - Hitler Election Danger */
 .hitler-danger-zone {
     position: relative;
+    margin-top: 50px;
 }
 
 .hitler-danger-zone::before {
-    content: 'DANGER: Hitler can win if elected Chancellor!';
+    content: '⚠️ DANGER: Hitler can win!';
     position: absolute;
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: -45px;
+    left: 10px;
+    right: 10px;
+    transform: none;
     background: linear-gradient(135deg, var(--deep-red), var(--blood-red));
     color: var(--cream);
-    padding: 8px 20px;
-    border-radius: 3px;
-    font-size: 0.9em;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 0.85em;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
     animation: danger-pulse 1s ease-in-out infinite;
-    white-space: nowrap;
+    text-align: center;
     border: 2px solid var(--gold);
     z-index: 10;
 }
@@ -1823,13 +1930,228 @@ h2 {
     0%, 100% {
         opacity: 1;
         box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
-        transform: translateX(-50%) scale(1);
     }
     50% {
         opacity: 0.9;
         box-shadow: 0 0 30px rgba(139, 0, 0, 0.8), 0 0 60px rgba(139, 0, 0, 0.4);
-        transform: translateX(-50%) scale(1.02);
     }
+}
+
+/* Execution Phase Styles */
+.execution-warning,
+.execution-waiting {
+    text-align: center;
+    padding: 20px;
+}
+
+.execution-icon {
+    font-size: 4em;
+    margin-bottom: 15px;
+    animation: skull-pulse 1.5s ease-in-out infinite;
+}
+
+.execution-icon.pulse {
+    animation: skull-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes skull-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.execution-title,
+.execution-waiting-title {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--blood-red);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.execution-subtitle {
+    color: var(--cream);
+    font-size: 1em;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.execution-waiting-text {
+    color: var(--cream);
+    font-size: 1.1em;
+    margin-top: 10px;
+}
+
+.execution-waiting-warning {
+    background: linear-gradient(135deg, rgba(139, 0, 0, 0.4), rgba(139, 0, 0, 0.2));
+    border: 2px solid var(--blood-red);
+    border-radius: 8px;
+    padding: 15px 20px;
+    color: var(--cream);
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+    animation: warning-flash 1s ease-in-out infinite;
+}
+
+@keyframes warning-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.execution-targets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.player-card.execute-target {
+    background: linear-gradient(135deg, rgba(139, 0, 0, 0.3), rgba(26, 26, 26, 0.9));
+    border: 2px solid var(--blood-red);
+    transition: all 0.3s;
+}
+
+.player-card.execute-target:hover {
+    background: linear-gradient(135deg, rgba(139, 0, 0, 0.6), rgba(139, 0, 0, 0.3));
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(139, 0, 0, 0.5);
+}
+
+.execute-label {
+    display: block;
+    margin-top: 10px;
+    padding: 5px 10px;
+    background: var(--deep-red);
+    color: var(--cream);
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* Execution Result Display */
+.execution-result-display {
+    text-align: center;
+    padding: 20px;
+}
+
+.execution-skull {
+    font-size: 5em;
+    animation: skull-drop 0.5s ease-out;
+}
+
+@keyframes skull-drop {
+    0% { transform: translateY(-50px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.execution-result-title {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--blood-red);
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    margin: 10px 0 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    animation: title-flash 0.5s ease-out 0.3s backwards;
+}
+
+@keyframes title-flash {
+    0% { opacity: 0; transform: scale(1.5); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.execution-victim {
+    margin: 20px 0;
+    animation: victim-reveal 0.5s ease-out 0.5s backwards;
+}
+
+@keyframes victim-reveal {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.execution-victim-name {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: var(--cream);
+    margin-top: 10px;
+}
+
+.execution-role-reveal {
+    margin-top: 20px;
+    animation: role-reveal 0.5s ease-out 0.8s backwards;
+}
+
+@keyframes role-reveal {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.role-was {
+    display: block;
+    font-size: 1em;
+    color: var(--cream);
+    opacity: 0.8;
+    margin-bottom: 8px;
+}
+
+.revealed-role {
+    display: inline-block;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 8px 20px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.revealed-role.liberal {
+    background: var(--liberal-blue);
+    color: var(--cream);
+    box-shadow: 0 0 15px rgba(30, 58, 95, 0.5);
+}
+
+.revealed-role.fascist {
+    background: var(--deep-red);
+    color: var(--cream);
+    box-shadow: 0 0 15px rgba(139, 0, 0, 0.5);
+}
+
+.revealed-role.hitler {
+    background: linear-gradient(135deg, var(--deep-red), var(--gold));
+    color: var(--cream);
+    box-shadow: 0 0 15px rgba(201, 162, 39, 0.5);
+}
+
+.hitler-killed {
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(30, 58, 95, 0.6), rgba(30, 58, 95, 0.3));
+    border: 3px solid var(--liberal-light);
+    border-radius: 10px;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--liberal-light);
+    animation: hitler-killed-flash 0.5s ease-out 1s backwards, celebration-glow 1s ease-in-out infinite;
+}
+
+@keyframes hitler-killed-flash {
+    0% { opacity: 0; transform: scale(0.5); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes celebration-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(30, 58, 95, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(30, 58, 95, 0.8), 0 0 60px rgba(30, 58, 95, 0.4); }
+}
+
+.liberals-win-soon {
+    font-size: 0.8em;
+    margin-top: 10px;
+    color: var(--cream);
 }
 
 /* Final Policy Warning */

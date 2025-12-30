@@ -20,7 +20,17 @@ const roleConfigurations = {
     6: { liberals: 4, fascists: 1, hitler: 1 }
 };
 
-// AI Player names
+// Player Avatars - emojis with German names
+const PLAYER_AVATARS = [
+    { emoji: '🦁', name: 'Otto', color: '#f4a460' },
+    { emoji: '🐺', name: 'Heinrich', color: '#708090' },
+    { emoji: '🦊', name: 'Wilhelm', color: '#ff6b35' },
+    { emoji: '🐻', name: 'Friedrich', color: '#8b4513' },
+    { emoji: '🦅', name: 'Karl', color: '#4a90d9' },
+    { emoji: '🐍', name: 'Hans', color: '#228b22' }
+];
+
+// AI Player names (legacy, now use avatars)
 const AI_NAMES = [
     'Otto', 'Heinrich', 'Wilhelm', 'Friedrich', 'Karl',
     'Hans', 'Klaus', 'Ernst', 'Ludwig', 'Werner'
@@ -53,18 +63,35 @@ function generateRoomCode() {
     return code;
 }
 
+// Get the next available avatar for a room
+function getNextAvatar(room) {
+    const usedIndices = room ? room.players.map(p => p.avatarIndex).filter(i => i !== undefined) : [];
+    for (let i = 0; i < PLAYER_AVATARS.length; i++) {
+        if (!usedIndices.includes(i)) {
+            return { index: i, ...PLAYER_AVATARS[i] };
+        }
+    }
+    // Fallback if all avatars used
+    return { index: 0, ...PLAYER_AVATARS[0] };
+}
+
 function createRoom(hostId, hostName) {
     let code;
     do {
         code = generateRoomCode();
     } while (rooms.has(code));
 
+    const firstAvatar = PLAYER_AVATARS[0];
+
     const room = {
         code,
         hostId,
         players: [{
             id: hostId,
-            name: hostName,
+            name: firstAvatar.name,
+            avatar: firstAvatar.emoji,
+            avatarColor: firstAvatar.color,
+            avatarIndex: 0,
             role: null,
             isAlive: true,
             hasVoted: false,
@@ -169,6 +196,8 @@ function getPublicGameState(room) {
         players: room.players.map(p => ({
             id: p.id,
             name: p.name,
+            avatar: p.avatar,
+            avatarColor: p.avatarColor,
             isAlive: p.isAlive,
             hasVoted: p.hasVoted,
             isAI: p.isAI || false
@@ -281,14 +310,14 @@ function generateAIPlayerId() {
 }
 
 function addAIPlayers(room, targetCount) {
-    const usedNames = room.players.map(p => p.name);
-    const availableNames = shuffleArray(AI_NAMES.filter(n => !usedNames.includes(n)));
-
-    while (room.players.length < targetCount && availableNames.length > 0) {
-        const aiName = availableNames.pop();
+    while (room.players.length < targetCount) {
+        const avatar = getNextAvatar(room);
         room.players.push({
             id: generateAIPlayerId(),
-            name: aiName + ' (CPU)',
+            name: avatar.name,
+            avatar: avatar.emoji,
+            avatarColor: avatar.color,
+            avatarIndex: avatar.index,
             role: null,
             isAlive: true,
             hasVoted: false,
@@ -974,6 +1003,8 @@ function handleVotingComplete(room) {
     room.gameState.votes = alivePlayers.map(p => ({
         playerId: p.id,
         playerName: p.name,
+        avatar: p.avatar,
+        avatarColor: p.avatarColor,
         vote: p.vote
     }));
 
@@ -1033,9 +1064,13 @@ io.on('connection', (socket) => {
             return;
         }
 
+        const avatar = getNextAvatar(room);
         room.players.push({
             id: socket.id,
-            name: playerName,
+            name: avatar.name,
+            avatar: avatar.emoji,
+            avatarColor: avatar.color,
+            avatarIndex: avatar.index,
             role: null,
             isAlive: true,
             hasVoted: false,

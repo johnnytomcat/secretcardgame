@@ -1,3 +1,27 @@
+// Player Avatars - emojis with German names
+const PLAYER_AVATARS = [
+    { emoji: '🦁', name: 'Otto', color: '#f4a460' },
+    { emoji: '🐺', name: 'Heinrich', color: '#708090' },
+    { emoji: '🦊', name: 'Wilhelm', color: '#ff6b35' },
+    { emoji: '🐻', name: 'Friedrich', color: '#8b4513' },
+    { emoji: '🦅', name: 'Karl', color: '#4a90d9' },
+    { emoji: '🐍', name: 'Hans', color: '#228b22' }
+];
+
+// Helper function to render player avatar HTML
+function renderPlayerAvatar(player, size = 'medium') {
+    const sizeClass = `avatar-${size}`;
+    return `<span class="player-avatar ${sizeClass}" style="background-color: ${player.avatarColor}">${player.avatar}</span>`;
+}
+
+// Helper function to render player name with avatar
+function renderPlayerName(player, showAvatar = true) {
+    if (showAvatar) {
+        return `${renderPlayerAvatar(player)} <span class="player-name-text">${player.name}</span>`;
+    }
+    return player.name;
+}
+
 // Game State
 const gameState = {
     playerCount: 0,
@@ -109,11 +133,14 @@ function startGame() {
     gameState.playerCount = parseInt(document.getElementById('player-count').value);
     gameState.players = [];
 
-    // Create players
+    // Create players with avatars
     for (let i = 0; i < gameState.playerCount; i++) {
+        const avatar = PLAYER_AVATARS[i];
         gameState.players.push({
             id: i,
-            name: `Player ${i + 1}`,
+            name: avatar.name,
+            avatar: avatar.emoji,
+            avatarColor: avatar.color,
             role: null,
             isAlive: true,
             votes: []
@@ -186,8 +213,8 @@ function initializeDeck() {
 // Role reveal sequence
 function updateRoleInstruction() {
     const currentPlayer = gameState.players[gameState.currentRoleReveal];
-    document.getElementById('role-instruction').textContent =
-        `Pass the device to ${currentPlayer.name}`;
+    document.getElementById('role-instruction').innerHTML =
+        `Pass the device to ${renderPlayerName(currentPlayer)}`;
     document.getElementById('role-display').classList.add('hidden');
     document.getElementById('reveal-role').classList.remove('hidden');
 }
@@ -265,8 +292,8 @@ function startElectionPhase() {
     showPhase('election-phase');
 
     const president = gameState.players[gameState.currentPresidentIndex];
-    document.getElementById('election-info').textContent =
-        `${president.name} is the President. Select a Chancellor candidate.`;
+    document.getElementById('election-info').innerHTML =
+        `${renderPlayerName(president)} is the President. Select a Chancellor candidate.`;
 
     renderPlayerSelection(president);
 }
@@ -306,6 +333,7 @@ function renderPlayerSelection(president) {
 
         card.innerHTML = `
             ${keyIndicator}
+            ${renderPlayerAvatar(player, 'large')}
             <h3>${player.name}</h3>
             ${player.id === president.id ? '<span class="player-badge">President</span>' : ''}
             ${player.id === gameState.previousChancellor?.id ? '<span class="player-badge">Prev. Chancellor</span>' : ''}
@@ -332,8 +360,8 @@ function startVotingPhase() {
     showPhase('voting-phase');
 
     const president = gameState.players[gameState.currentPresidentIndex];
-    document.getElementById('vote-info').textContent =
-        `President: ${president.name} | Chancellor: ${gameState.currentChancellor.name}`;
+    document.getElementById('vote-info').innerHTML =
+        `President: ${renderPlayerName(president)} | Chancellor: ${renderPlayerName(gameState.currentChancellor)}`;
 
     gameState.votes = [];
     gameState.currentVoterIndex = 0;
@@ -361,8 +389,8 @@ function updateVoterDisplay() {
 
     const keys = keyMap[gameState.currentVoterIndex];
 
-    document.getElementById('current-voter').textContent =
-        `${currentVoter.name} - Press ${keys.yes.toUpperCase()} for YES or ${keys.no.toUpperCase()} for NO`;
+    document.getElementById('current-voter').innerHTML =
+        `${renderPlayerName(currentVoter)} - Press ${keys.yes.toUpperCase()} for YES or ${keys.no.toUpperCase()} for NO`;
 
     // Reset keyboard handler for this voter
     setupVoteKeyboardHandler(keys.yes, keys.no);
@@ -398,7 +426,7 @@ function setupVoteKeyboardHandler(yesKey, noKey) {
 function castVote(vote) {
     const currentVoter = gameState.players[gameState.currentVoterIndex];
     gameState.votes.push({
-        player: currentVoter.name,
+        player: currentVoter,
         vote: vote
     });
 
@@ -421,12 +449,12 @@ function resolveVote() {
     document.getElementById('results-title').textContent =
         passed ? 'Government Elected!' : 'Government Rejected!';
 
-    let resultsHtml = '<div>';
+    let resultsHtml = '<div class="vote-results-grid">';
     gameState.votes.forEach(v => {
         resultsHtml += `
-            <div class="vote-result">
-                <span>${v.player}</span>
-                <span>${v.vote ? 'Yes' : 'No'}</span>
+            <div class="vote-result ${v.vote ? 'vote-yes' : 'vote-no'}">
+                <span class="voter-info">${renderPlayerName(v.player)}</span>
+                <span class="vote-choice">${v.vote ? 'Ja!' : 'Nein!'}</span>
             </div>
         `;
     });
@@ -475,8 +503,8 @@ function startLegislativePhase() {
     // Draw 3 policies
     gameState.currentPolicies = drawPolicies(3);
 
-    document.getElementById('legislative-instruction').textContent =
-        `${gameState.players[gameState.currentPresidentIndex].name} (President): Select 2 policies to pass to the Chancellor`;
+    document.getElementById('legislative-instruction').innerHTML =
+        `${renderPlayerName(gameState.players[gameState.currentPresidentIndex])} (President): Select 2 policies to pass to the Chancellor`;
 
     renderPolicyCards(gameState.currentPolicies, selectPresidentPolicies, true);
 }
@@ -559,8 +587,8 @@ function selectPresidentPolicies(selectedIndices) {
     gameState.currentPolicies = selectedIndices.map(i => gameState.currentPolicies[i]);
 
     // Chancellor's turn
-    document.getElementById('legislative-instruction').textContent =
-        `${gameState.currentChancellor.name} (Chancellor): Choose 1 policy to enact`;
+    document.getElementById('legislative-instruction').innerHTML =
+        `${renderPlayerName(gameState.currentChancellor)} (Chancellor): Choose 1 policy to enact`;
 
     renderPolicyCards(gameState.currentPolicies, selectChancellorPolicy);
 }
@@ -665,23 +693,28 @@ function executePresidentialPower(power) {
 
     switch(power) {
         case 'investigate':
-            document.getElementById('power-description').textContent =
-                `${president.name}: Investigate a player's loyalty`;
+            document.getElementById('power-description').innerHTML =
+                `${renderPlayerName(president)}: Investigate a player's loyalty`;
             renderInvestigatePower();
             break;
         case 'examine':
-            document.getElementById('power-description').textContent =
-                `${president.name}: Examine the top 3 cards of the policy deck`;
+            document.getElementById('power-description').innerHTML =
+                `${renderPlayerName(president)}: Examine the top 3 cards of the policy deck`;
             renderExaminePower();
             break;
         case 'execute':
-            document.getElementById('power-description').textContent =
-                `${president.name}: Execute a player`;
+            document.getElementById('power-description').innerHTML = `
+                <div class="execution-warning">
+                    <div class="execution-icon">💀</div>
+                    <div class="execution-title">EXECUTION ORDER</div>
+                    <div class="execution-subtitle">${renderPlayerName(president)} must choose a player to execute.<br>This decision is permanent.</div>
+                </div>
+            `;
             renderExecutePower();
             break;
         case 'special-election':
-            document.getElementById('power-description').textContent =
-                `${president.name}: Call a special election`;
+            document.getElementById('power-description').innerHTML =
+                `${renderPlayerName(president)}: Call a special election`;
             renderSpecialElectionPower();
             break;
     }
@@ -701,6 +734,7 @@ function renderInvestigatePower() {
             card.className = 'player-card';
             card.innerHTML = `
                 <div class="key-indicator">[${keyNumber}]</div>
+                ${renderPlayerAvatar(player, 'large')}
                 <h3>${player.name}</h3>
             `;
             eligiblePlayers.push(player);
@@ -714,7 +748,7 @@ function renderInvestigatePower() {
         showPhase('results-phase');
         document.getElementById('results-title').textContent = 'Investigation Result';
         document.getElementById('results-content').innerHTML = `
-            <p>${player.name}'s party membership is:</p>
+            <p>${renderPlayerName(player)}'s party membership is:</p>
             <h2>${player.role === 'liberal' ? 'Liberal' : 'Fascist'}</h2>
             <p style="margin-top: 20px; font-size: 0.9em;">Note: Hitler shows as Fascist</p>
         `;
@@ -750,7 +784,7 @@ function renderExaminePower() {
 
 function renderExecutePower() {
     const container = document.getElementById('power-action');
-    container.innerHTML = '<div class="player-grid" id="execute-players"></div>';
+    container.innerHTML = '<div class="execution-targets" id="execute-players"></div>';
     const grid = document.getElementById('execute-players');
 
     const eligiblePlayers = [];
@@ -759,10 +793,12 @@ function renderExecutePower() {
     gameState.players.forEach(player => {
         if (player.id !== gameState.currentPresidentIndex && player.isAlive) {
             const card = document.createElement('div');
-            card.className = 'player-card';
+            card.className = 'player-card execute-target';
             card.innerHTML = `
                 <div class="key-indicator">[${keyNumber}]</div>
+                ${renderPlayerAvatar(player, 'large')}
                 <h3>${player.name}</h3>
+                <span class="execute-label">☠️ EXECUTE</span>
             `;
             eligiblePlayers.push(player);
             keyNumber++;
@@ -774,14 +810,34 @@ function renderExecutePower() {
         clearKeyboardHandler();
         player.isAlive = false;
 
+        const roleClass = player.role;
+        const roleName = player.role === 'liberal' ? 'LIBERAL' : player.role === 'fascist' ? 'FASCIST' : 'HITLER';
+        const wasHitler = player.role === 'hitler';
+
         showPhase('results-phase');
-        document.getElementById('results-title').textContent = 'Execution';
+        document.getElementById('results-title').textContent = '';
         document.getElementById('results-content').innerHTML = `
-            <p>${player.name} has been executed!</p>
-            <p>Their role was: <strong>${player.role === 'liberal' ? 'Liberal' : player.role === 'fascist' ? 'Fascist' : 'Hitler'}</strong></p>
+            <div class="execution-result-display">
+                <div class="execution-skull">💀</div>
+                <div class="execution-result-title">EXECUTED</div>
+                <div class="execution-victim">
+                    ${renderPlayerAvatar(player, 'large')}
+                    <div class="execution-victim-name">${player.name}</div>
+                </div>
+                <div class="execution-role-reveal">
+                    <span class="role-was">Their role was</span>
+                    <span class="revealed-role ${roleClass}">${roleName}</span>
+                </div>
+                ${wasHitler ? `
+                    <div class="hitler-killed">
+                        🎉 HITLER HAS BEEN KILLED! 🎉
+                        <div class="liberals-win-soon">Liberals Win!</div>
+                    </div>
+                ` : ''}
+            </div>
         `;
 
-        if (player.role === 'hitler') {
+        if (wasHitler) {
             endGame('liberal', 'Hitler was assassinated!');
         } else {
             gameState.nextAction = 'advance';
@@ -803,6 +859,7 @@ function renderSpecialElectionPower() {
             card.className = 'player-card';
             card.innerHTML = `
                 <div class="key-indicator">[${keyNumber}]</div>
+                ${renderPlayerAvatar(player, 'large')}
                 <h3>${player.name}</h3>
             `;
             eligiblePlayers.push(player);
@@ -864,6 +921,7 @@ function endGame(winner, reason) {
         card.className = `final-role-card ${player.role}`;
         card.style.animationDelay = `${index * 0.1}s`;
         card.innerHTML = `
+            ${renderPlayerAvatar(player, 'large')}
             <h3>${player.name}</h3>
             <p>${player.role.charAt(0).toUpperCase() + player.role.slice(1)}</p>
         `;

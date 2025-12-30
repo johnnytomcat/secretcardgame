@@ -10,6 +10,20 @@ let gameState = {
     private: null
 };
 
+// Helper function to render player avatar HTML
+function renderPlayerAvatar(player, size = 'medium') {
+    const sizeClass = `avatar-${size}`;
+    return `<span class="player-avatar ${sizeClass}" style="background-color: ${player.avatarColor}">${player.avatar}</span>`;
+}
+
+// Helper function to render player name with avatar
+function renderPlayerName(player, showAvatar = true) {
+    if (showAvatar && player.avatar) {
+        return `${renderPlayerAvatar(player)} <span class="player-name-text">${player.name}</span>`;
+    }
+    return player.name;
+}
+
 // DOM Elements
 const lobbyScreen = document.getElementById('lobby-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -733,8 +747,8 @@ const AnimationHelper = {
         const tallyEl = document.querySelector('.vote-tally');
 
         // Determine if passed or failed for styling
-        const yesCount = document.querySelectorAll('.vote-result.yes').length;
-        const noCount = document.querySelectorAll('.vote-result.no').length;
+        const yesCount = document.querySelectorAll('.vote-result.vote-yes').length;
+        const noCount = document.querySelectorAll('.vote-result.vote-no').length;
         const passed = yesCount > noCount;
 
         // Animate title first
@@ -1230,6 +1244,7 @@ function renderLobby() {
     const container = document.getElementById('players-container');
     container.innerHTML = pub.players.map((p, i) => `
         <div class="lobby-player ${p.id === gameState.playerId ? 'you' : ''} ${p.isAI ? 'ai-player' : ''}">
+            ${renderPlayerAvatar(p, 'medium')}
             <span class="player-name">${p.name}</span>
             ${i === 0 ? '<span class="host-badge">HOST</span>' : ''}
             ${p.id === gameState.playerId ? '<span class="you-badge">YOU</span>' : ''}
@@ -1261,7 +1276,7 @@ function renderPlayerInfoBar() {
     const pub = gameState.public;
 
     const myPlayer = pub.players.find(p => p.id === gameState.playerId);
-    document.getElementById('your-name').textContent = myPlayer?.name || '';
+    document.getElementById('your-name').innerHTML = myPlayer ? renderPlayerName(myPlayer) : '';
 
     const roleBadge = document.getElementById('your-role-badge');
     if (priv?.role) {
@@ -1312,6 +1327,7 @@ function renderElectionPhase() {
                 return `
                     <div class="player-card ${isDisabled ? 'disabled' : ''}"
                          ${!isDisabled ? `onclick="nominateChancellor('${p.id}')"` : ''}>
+                        ${renderPlayerAvatar(p, 'large')}
                         <h3>${p.name}</h3>
                         ${p.id === pub.previousChancellorId ? '<span class="player-badge">Prev. Chancellor</span>' : ''}
                         ${p.id === pub.previousPresidentId ? '<span class="player-badge">Prev. President</span>' : ''}
@@ -1320,7 +1336,7 @@ function renderElectionPhase() {
             }).join('');
     } else {
         document.getElementById('election-title').textContent = 'Presidential Election';
-        document.getElementById('election-info').textContent = `${president?.name} is selecting a Chancellor...`;
+        document.getElementById('election-info').innerHTML = `${renderPlayerName(president)} is selecting a Chancellor...`;
         document.getElementById('chancellor-selection').innerHTML = `
             <div class="waiting-spinner"></div>
             <p style="margin-top: 20px; opacity: 0.7;">Waiting ${AnimationHelper.createWaitingDots()}</p>
@@ -1346,8 +1362,8 @@ function renderVotingPhase() {
     }
 
     document.getElementById('vote-info').innerHTML = hitlerDanger
-        ? `<span style="color: var(--blood-red);">DANGER ZONE!</span><br>President: ${president?.name} | Chancellor: ${chancellor?.name}`
-        : `President: ${president?.name} | Chancellor: ${chancellor?.name}`;
+        ? `<span style="color: var(--blood-red);">DANGER ZONE!</span><br>President: ${renderPlayerName(president)} | Chancellor: ${renderPlayerName(chancellor)}`
+        : `President: ${renderPlayerName(president)} | Chancellor: ${renderPlayerName(chancellor)}`;
 
     const myPlayer = pub.players.find(p => p.id === gameState.playerId);
     if (myPlayer?.hasVoted) {
@@ -1377,9 +1393,9 @@ function renderVoteResultPhase() {
     document.getElementById('vote-results').innerHTML = `
         <div class="vote-results-grid">
             ${pub.votes.map(v => `
-                <div class="vote-result ${v.vote ? 'yes' : 'no'}">
-                    <span>${v.playerName}</span>
-                    <span>${v.vote ? 'JA!' : 'NEIN!'}</span>
+                <div class="vote-result ${v.vote ? 'vote-yes' : 'vote-no'}">
+                    <span class="voter-info">${renderPlayerAvatar({avatar: v.avatar, avatarColor: v.avatarColor}, 'small')} ${v.playerName}</span>
+                    <span class="vote-choice">${v.vote ? 'JA!' : 'NEIN!'}</span>
                 </div>
             `).join('')}
         </div>
@@ -1414,7 +1430,7 @@ function renderLegislativePhase() {
             document.getElementById('legislative-waiting-phase').classList.remove('hidden');
             const president = pub.players.find(p => p.id === pub.currentPresidentId);
             document.getElementById('legislative-waiting-info').innerHTML =
-                `${president?.name} (President) is reviewing policies ${AnimationHelper.createWaitingDots()}`;
+                `${renderPlayerName(president)} (President) is reviewing policies ${AnimationHelper.createWaitingDots()}`;
         }
     } else if (pub.phase === 'legislative-chancellor') {
         if (priv?.isChancellor && priv?.policies) {
@@ -1431,7 +1447,7 @@ function renderLegislativePhase() {
             document.getElementById('legislative-waiting-phase').classList.remove('hidden');
             const chancellor = pub.players.find(p => p.id === pub.currentChancellorId);
             document.getElementById('legislative-waiting-info').innerHTML =
-                `${chancellor?.name} (Chancellor) is choosing a policy ${AnimationHelper.createWaitingDots()}`;
+                `${renderPlayerName(chancellor)} (Chancellor) is choosing a policy ${AnimationHelper.createWaitingDots()}`;
         }
     }
 }
@@ -1487,9 +1503,26 @@ function renderExecutivePhase() {
 
     if (!isPresident) {
         const president = pub.players.find(p => p.id === pub.currentPresidentId);
-        document.getElementById('executive-info').innerHTML =
-            `${president?.name} is using their presidential power ${AnimationHelper.createWaitingDots()}`;
-        document.getElementById('executive-action').innerHTML = '<div class="waiting-spinner"></div>';
+
+        if (power === 'execute') {
+            // Show dramatic waiting screen for execution
+            document.getElementById('executive-info').innerHTML = `
+                <div class="execution-waiting">
+                    <div class="execution-icon pulse">💀</div>
+                    <div class="execution-waiting-title">EXECUTION IN PROGRESS</div>
+                    <div class="execution-waiting-text">${renderPlayerName(president)} is choosing someone to execute...</div>
+                </div>
+            `;
+            document.getElementById('executive-action').innerHTML = `
+                <div class="execution-waiting-warning">
+                    ⚠️ A player will be eliminated from the game
+                </div>
+            `;
+        } else {
+            document.getElementById('executive-info').innerHTML =
+                `${renderPlayerName(president)} is using their presidential power ${AnimationHelper.createWaitingDots()}`;
+            document.getElementById('executive-action').innerHTML = '<div class="waiting-spinner"></div>';
+        }
         return;
     }
 
@@ -1500,6 +1533,7 @@ function renderExecutivePhase() {
                 .filter(p => p.isAlive && p.id !== gameState.playerId)
                 .map(p => `
                     <div class="player-card" onclick="investigatePlayer('${p.id}')">
+                        ${renderPlayerAvatar(p, 'large')}
                         <h3>${p.name}</h3>
                     </div>
                 `).join('');
@@ -1518,20 +1552,33 @@ function renderExecutivePhase() {
                 .filter(p => p.isAlive && p.id !== gameState.playerId)
                 .map(p => `
                     <div class="player-card" onclick="specialElection('${p.id}')">
+                        ${renderPlayerAvatar(p, 'large')}
                         <h3>${p.name}</h3>
                     </div>
                 `).join('');
             break;
 
         case 'execute':
-            document.getElementById('executive-info').textContent = 'Execute a player:';
-            document.getElementById('executive-action').innerHTML = pub.players
-                .filter(p => p.isAlive && p.id !== gameState.playerId)
-                .map(p => `
-                    <div class="player-card execute" onclick="executePlayer('${p.id}')">
-                        <h3>${p.name}</h3>
-                    </div>
-                `).join('');
+            document.getElementById('executive-info').innerHTML = `
+                <div class="execution-warning">
+                    <div class="execution-icon">💀</div>
+                    <div class="execution-title">EXECUTION ORDER</div>
+                    <div class="execution-subtitle">As President, you must choose a player to execute.<br>This decision is permanent. Choose wisely.</div>
+                </div>
+            `;
+            document.getElementById('executive-action').innerHTML = `
+                <div class="execution-targets">
+                    ${pub.players
+                        .filter(p => p.isAlive && p.id !== gameState.playerId)
+                        .map(p => `
+                            <div class="player-card execute-target" onclick="executePlayer('${p.id}')">
+                                ${renderPlayerAvatar(p, 'large')}
+                                <h3>${p.name}</h3>
+                                <span class="execute-label">☠️ EXECUTE</span>
+                            </div>
+                        `).join('')}
+                </div>
+            `;
             break;
     }
 }
@@ -1543,16 +1590,30 @@ function renderExecutionResultPhase() {
     // Dramatic screen flash for execution
     AnimationHelper.screenFlash('fascist');
 
-    const wasHitler = pub.executedPlayer?.role === 'hitler';
-    const hitlerMessage = wasHitler ? '<p style="color: var(--liberal-light); font-size: 1.5em; margin-top: 20px;">Hitler has been killed!</p>' : '';
+    const executedPlayer = pub.executedPlayer;
+    const wasHitler = executedPlayer?.role === 'hitler';
+    const roleClass = executedPlayer?.role || '';
+    const roleName = executedPlayer?.role?.toUpperCase() || 'UNKNOWN';
 
     document.getElementById('execution-content').innerHTML = `
-        <div class="execution-target" style="font-size: 2em; color: var(--blood-red); margin: 20px 0;">
-            ${pub.executedPlayer?.name}
+        <div class="execution-result-display">
+            <div class="execution-skull">💀</div>
+            <div class="execution-result-title">EXECUTED</div>
+            <div class="execution-victim">
+                ${executedPlayer ? renderPlayerAvatar(executedPlayer, 'large') : ''}
+                <div class="execution-victim-name">${executedPlayer?.name || 'Unknown'}</div>
+            </div>
+            <div class="execution-role-reveal">
+                <span class="role-was">Their role was</span>
+                <span class="revealed-role ${roleClass}">${roleName}</span>
+            </div>
+            ${wasHitler ? `
+                <div class="hitler-killed">
+                    🎉 HITLER HAS BEEN KILLED! 🎉
+                    <div class="liberals-win-soon">Liberals Win!</div>
+                </div>
+            ` : ''}
         </div>
-        <p>has been executed!</p>
-        <p style="margin-top: 15px;">They were a <strong class="${pub.executedPlayer?.role}" style="font-size: 1.3em;">${pub.executedPlayer?.role?.toUpperCase()}</strong></p>
-        ${hitlerMessage}
     `;
 }
 
@@ -1566,6 +1627,7 @@ function renderGameOverPhase() {
 
     document.getElementById('all-roles').innerHTML = pub.players.map((p, i) => `
         <div class="final-role-card ${p.role || ''}" style="animation-delay: ${i * 0.2}s;">
+            ${renderPlayerAvatar(p, 'large')}
             <h3>${p.name}</h3>
             <p class="${p.role}">${p.role?.toUpperCase() || 'Unknown'}</p>
             ${!p.isAlive ? '<span class="executed-badge">EXECUTED</span>' : ''}
