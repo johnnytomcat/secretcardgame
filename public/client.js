@@ -958,6 +958,13 @@ function checkUrlForRoomCode() {
         if (roomCodeInput) {
             roomCodeInput.value = roomCode.toUpperCase();
         }
+
+        // Hide create room button and OR divider since they're joining
+        const createBtn = document.getElementById('create-room-btn');
+        const orDivider = document.querySelector('.or-divider');
+        if (createBtn) createBtn.classList.add('hidden');
+        if (orDivider) orDivider.classList.add('hidden');
+
         // Clear the URL parameter to avoid confusion on refresh
         window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -1635,7 +1642,12 @@ function renderVotingPhase() {
     `;
 
     const myPlayer = pub.players.find(p => p.id === gameState.playerId);
-    if (myPlayer?.hasVoted) {
+    if (!myPlayer?.isAlive) {
+        // Eliminated players cannot vote
+        document.getElementById('vote-buttons').classList.add('hidden');
+        document.getElementById('vote-waiting').classList.remove('hidden');
+        document.getElementById('vote-waiting').innerHTML = `<span class="eliminated-notice">☠️ You have been eliminated and cannot vote</span>`;
+    } else if (myPlayer?.hasVoted) {
         document.getElementById('vote-buttons').classList.add('hidden');
         document.getElementById('vote-waiting').classList.remove('hidden');
         document.getElementById('vote-waiting').innerHTML = `Waiting for other players ${AnimationHelper.createWaitingDots()}`;

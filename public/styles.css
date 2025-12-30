@@ -1261,6 +1261,18 @@ h2 {
     flex-wrap: wrap;
 }
 
+.eliminated-notice {
+    display: block;
+    color: var(--blood-red);
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 15px 25px;
+    background: rgba(139, 0, 0, 0.2);
+    border: 2px solid var(--blood-red);
+    border-radius: 5px;
+    text-align: center;
+}
+
 /* Government Ticket Display */
 .danger-zone-warning {
     color: var(--blood-red);
