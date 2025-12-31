@@ -1558,6 +1558,50 @@ function renderPlayerInfoBar() {
 
     // Apply hidden state
     updateRoleDisplay();
+
+    // Render all players status bar
+    renderPlayersStatusBar();
+}
+
+function renderPlayersStatusBar() {
+    const pub = gameState.public;
+    if (!pub) return;
+
+    const container = document.getElementById('players-status-bar');
+    if (!container) return;
+
+    const currentPresidentId = pub.currentPresidentId;
+    const currentChancellorId = pub.currentChancellorId;
+
+    container.innerHTML = pub.players.map(p => {
+        const isPresident = p.id === currentPresidentId;
+        const isChancellor = p.id === currentChancellorId;
+        const isYou = p.id === gameState.playerId;
+        const isDead = !p.isAlive;
+
+        let statusClasses = 'player-status';
+        if (isPresident) statusClasses += ' is-president';
+        if (isChancellor) statusClasses += ' is-chancellor';
+        if (isDead) statusClasses += ' is-dead';
+        if (isYou) statusClasses += ' is-you';
+
+        let governmentBadge = '';
+        if (isPresident) {
+            governmentBadge = '<span class="govt-badge president-badge" title="President">🎩</span>';
+        } else if (isChancellor) {
+            governmentBadge = '<span class="govt-badge chancellor-badge" title="Chancellor">📜</span>';
+        }
+
+        return `
+            <div class="${statusClasses}">
+                ${renderPlayerAvatar(p, 'small')}
+                <span class="status-name">${p.name}</span>
+                ${governmentBadge}
+                ${isDead ? '<span class="dead-badge" title="Executed">💀</span>' : ''}
+                ${isYou ? '<span class="you-indicator">(you)</span>' : ''}
+            </div>
+        `;
+    }).join('');
 }
 
 function renderElectionPhase() {
