@@ -332,7 +332,7 @@ class SoundManager {
         setTimeout(() => this.playTone(262, 0.5, 'sawtooth', 0.08), 450);
     }
 
-    policyLiberal() {
+    policyGuest() {
         // Hopeful rising melody
         const notes = [523, 587, 659, 784];
         notes.forEach((note, i) => {
@@ -345,7 +345,7 @@ class SoundManager {
         }, 500);
     }
 
-    policyFascist() {
+    policyStaff() {
         // Dark, ominous
         this.playTone(130, 0.5, 'sawtooth', 0.15);
         this.playTone(138, 0.5, 'sawtooth', 0.1);
@@ -381,7 +381,7 @@ class SoundManager {
         });
     }
 
-    winLiberal() {
+    winGuest() {
         // Triumphant victory
         const melody = [523, 659, 784, 1047];
         melody.forEach((note, i) => {
@@ -397,7 +397,7 @@ class SoundManager {
         }, 800);
     }
 
-    winFascist() {
+    winStaff() {
         // Dark victory
         const melody = [196, 185, 175, 165];
         melody.forEach((note, i) => {
@@ -571,8 +571,8 @@ class SoundManager {
         }
     }
 
-    // Hitler elected - dramatic loss condition
-    hitlerElected() {
+    // Butler appointed - dramatic loss condition
+    butlerAppointed() {
         // Dramatic, ominous reveal
         this.playTone(130, 0.3, 'sawtooth', 0.2);
         this.playTone(138, 0.3, 'sawtooth', 0.15);
@@ -934,9 +934,9 @@ const AnimationHelper = {
         }
     },
 
-    // Check if Hitler can be elected (3+ fascist policies)
-    isHitlerDangerZone(fascistPolicies) {
-        return fascistPolicies >= 3;
+    // Check if Butler can be appointed (3+ staff policies)
+    isButlerDangerZone(staffPolicies) {
+        return staffPolicies >= 3;
     },
 
     // Add tension effect to voting phase
@@ -1121,9 +1121,9 @@ function handlePhaseChangeSound(oldPhase, newPhase, pubState) {
                 const noVotes = pubState.votes.filter(v => !v.vote).length;
                 if (yesVotes > noVotes) {
                     soundManager.votePassed();
-                    // Check if Hitler was elected (fascist win condition)
-                    if (pubState.winner === 'fascist' && pubState.winReason?.includes('Hitler')) {
-                        setTimeout(() => soundManager.hitlerElected(), 500);
+                    // Check if Butler was appointed (staff win condition)
+                    if (pubState.winner === 'staff' && pubState.winReason?.includes('Butler')) {
+                        setTimeout(() => soundManager.butlerAppointed(), 500);
                     }
                 } else {
                     soundManager.voteFailed();
@@ -1158,12 +1158,12 @@ function handlePhaseChangeSound(oldPhase, newPhase, pubState) {
             break;
 
         case 'policy-result':
-            if (pubState.enactedPolicy === 'liberal') {
-                soundManager.policyLiberal();
+            if (pubState.enactedPolicy === 'guest') {
+                soundManager.policyGuest();
             } else {
-                soundManager.policyFascist();
+                soundManager.policyStaff();
                 // Check if executive power was unlocked
-                if (pubState.fascistPolicies >= 3) {
+                if (pubState.staffPolicies >= 3) {
                     setTimeout(() => soundManager.executivePowerUnlock(), 800);
                 }
             }
@@ -1197,15 +1197,15 @@ function handlePhaseChangeSound(oldPhase, newPhase, pubState) {
             break;
 
         case 'gameover':
-            if (pubState.winner === 'liberal') {
-                soundManager.winLiberal();
+            if (pubState.winner === 'guest') {
+                soundManager.winGuest();
             } else {
-                // Check if fascists won by Hitler election
-                if (pubState.winReason?.includes('Hitler') && pubState.winReason?.includes('Chancellor')) {
-                    soundManager.hitlerElected();
-                    setTimeout(() => soundManager.winFascist(), 1500);
+                // Check if staff won by Butler appointment
+                if (pubState.winReason?.includes('Butler') && pubState.winReason?.includes('Head of Household')) {
+                    soundManager.butlerAppointed();
+                    setTimeout(() => soundManager.winStaff(), 1500);
                 } else {
-                    soundManager.winFascist();
+                    soundManager.winStaff();
                 }
             }
             break;
@@ -1232,7 +1232,8 @@ function checkIfMyTurn(phase, pubState, priv) {
 
 socket.on('investigationResult', ({ targetName, party }) => {
     soundManager.investigationReveal();
-    showModal(`Investigation Result`, `${targetName}'s party membership is: <strong>${party.toUpperCase()}</strong>`);
+    const displayParty = party === 'guest' ? 'HOUSE GUEST' : 'HOME STAFF';
+    showModal(`Investigation Result`, `${targetName}'s allegiance is: <strong>${displayParty}</strong>`);
 });
 
 socket.on('examineResult', ({ policies }) => {
@@ -1613,15 +1614,15 @@ function renderElectionPhase() {
     const president = pub.players.find(p => p.id === pub.currentPresidentId);
     const isPresident = priv?.isPresident;
 
-    // Check for Hitler danger zone (3+ fascist policies)
-    const hitlerDanger = AnimationHelper.isHitlerDangerZone(pub.fascistPolicies);
+    // Check for Butler danger zone (3+ staff policies)
+    const butlerDanger = AnimationHelper.isButlerDangerZone(pub.staffPolicies);
     const phaseContainer = document.getElementById('election-phase');
 
     // Add or remove danger zone class
-    if (hitlerDanger) {
-        phaseContainer.classList.add('hitler-danger-zone');
+    if (butlerDanger) {
+        phaseContainer.classList.add('butler-danger-zone');
     } else {
-        phaseContainer.classList.remove('hitler-danger-zone');
+        phaseContainer.classList.remove('butler-danger-zone');
     }
 
     if (isPresident) {
@@ -1661,18 +1662,18 @@ function renderVotingPhase() {
     const president = pub.players.find(p => p.id === pub.currentPresidentId);
     const chancellor = pub.players.find(p => p.id === pub.chancellorCandidateId);
 
-    // Check for Hitler danger - add extra tension
-    const hitlerDanger = AnimationHelper.isHitlerDangerZone(pub.fascistPolicies);
+    // Check for Butler danger - add extra tension
+    const butlerDanger = AnimationHelper.isButlerDangerZone(pub.staffPolicies);
     const votingArea = document.getElementById('voting-area');
 
-    if (hitlerDanger) {
+    if (butlerDanger) {
         votingArea.classList.add('heartbeat-pulse');
     } else {
         votingArea.classList.remove('heartbeat-pulse');
     }
 
     document.getElementById('vote-info').innerHTML = `
-        ${hitlerDanger ? '<div class="danger-zone-warning">DANGER ZONE!</div>' : ''}
+        ${butlerDanger ? '<div class="danger-zone-warning">DANGER ZONE!</div>' : ''}
         <div class="government-ticket">
             <div class="ticket-role">
                 <span class="ticket-label">President</span>
@@ -1720,7 +1721,7 @@ function renderVoteResultPhase() {
             ${pub.votes.map(v => `
                 <div class="vote-result ${v.vote ? 'vote-yes' : 'vote-no'}">
                     <span class="voter-info">${renderPlayerAvatar({avatar: v.avatar, avatarColor: v.avatarColor}, 'small')} ${v.playerName}</span>
-                    <span class="vote-choice">${v.vote ? 'JA!' : 'NEIN!'}</span>
+                    <span class="vote-choice">${v.vote ? 'AYE!' : 'NAY!'}</span>
                 </div>
             `).join('')}
         </div>
@@ -1790,15 +1791,15 @@ function renderPolicyResultPhase() {
         `${policy?.toUpperCase()} Policy Enacted!`;
 
     // Check for near-win conditions for extra emphasis
-    const liberalNearWin = pub.liberalPolicies >= 4;
-    const fascistNearWin = pub.fascistPolicies >= 5;
-    const extraClass = (liberalNearWin || fascistNearWin) ? 'final-policy-warning ' + policy : '';
+    const guestNearWin = pub.guestPolicies >= 4;
+    const staffNearWin = pub.staffPolicies >= 5;
+    const extraClass = (guestNearWin || staffNearWin) ? 'final-policy-warning ' + policy : '';
 
     document.getElementById('policy-result-content').innerHTML = `
         <div class="policy-card large ${policy} ${extraClass}">${policy?.toUpperCase()}</div>
-        <p>Liberal: ${pub.liberalPolicies}/5 | Fascist: ${pub.fascistPolicies}/6</p>
-        ${liberalNearWin ? '<p class="tension-text" style="color: var(--liberal-light); margin-top: 15px;">Liberals are close to victory!</p>' : ''}
-        ${fascistNearWin ? '<p class="tension-text" style="color: var(--blood-red); margin-top: 15px;">Fascists are close to victory!</p>' : ''}
+        <p>Guest: ${pub.guestPolicies}/5 | Staff: ${pub.staffPolicies}/6</p>
+        ${guestNearWin ? '<p class="tension-text" style="color: var(--guest-light); margin-top: 15px;">House Guests are close to victory!</p>' : ''}
+        ${staffNearWin ? '<p class="tension-text" style="color: var(--staff-dark); margin-top: 15px;">Home Staff are close to victory!</p>' : ''}
     `;
 }
 
@@ -1913,17 +1914,22 @@ function renderExecutionResultPhase() {
     document.getElementById('execution-result-phase').classList.remove('hidden');
 
     // Dramatic screen flash for execution
-    AnimationHelper.screenFlash('fascist');
+    AnimationHelper.screenFlash('staff');
 
     const executedPlayer = pub.executedPlayer;
-    const wasHitler = executedPlayer?.role === 'hitler';
+    const wasButler = executedPlayer?.role === 'butler';
     const roleClass = executedPlayer?.role || '';
-    const roleName = executedPlayer?.role?.toUpperCase() || 'UNKNOWN';
+    const roleDisplayNames = {
+        'guest': 'HOUSE GUEST',
+        'staff': 'HOME STAFF',
+        'butler': 'THE BUTLER'
+    };
+    const roleName = roleDisplayNames[executedPlayer?.role] || 'UNKNOWN';
 
     document.getElementById('execution-content').innerHTML = `
         <div class="execution-result-display">
             <div class="execution-skull">💀</div>
-            <div class="execution-result-title">EXECUTED</div>
+            <div class="execution-result-title">DISMISSED</div>
             <div class="execution-victim">
                 ${executedPlayer ? renderPlayerAvatar(executedPlayer, 'large') : ''}
                 <div class="execution-victim-name">${executedPlayer?.name || 'Unknown'}</div>
@@ -1932,10 +1938,10 @@ function renderExecutionResultPhase() {
                 <span class="role-was">Their role was</span>
                 <span class="revealed-role ${roleClass}">${roleName}</span>
             </div>
-            ${wasHitler ? `
-                <div class="hitler-killed">
-                    🎉 HITLER HAS BEEN KILLED! 🎉
-                    <div class="liberals-win-soon">Liberals Win!</div>
+            ${wasButler ? `
+                <div class="butler-exposed">
+                    THE BUTLER HAS BEEN EXPOSED!
+                    <div class="guests-win-soon">House Guests Win!</div>
                 </div>
             ` : ''}
         </div>
@@ -1949,16 +1955,22 @@ function renderGameOverPhase() {
     // Clear session since game is over
     clearSession();
 
-    document.getElementById('winner-title').textContent =
-        `${pub.winner?.toUpperCase()}S WIN!`;
+    const winnerText = pub.winner === 'guest' ? 'HOUSE GUESTS' : 'HOME STAFF';
+    document.getElementById('winner-title').textContent = `${winnerText} WIN!`;
     document.getElementById('win-reason').textContent = pub.winReason;
+
+    const roleDisplayNames = {
+        'guest': 'House Guest',
+        'staff': 'Home Staff',
+        'butler': 'The Butler'
+    };
 
     document.getElementById('all-roles').innerHTML = pub.players.map((p, i) => `
         <div class="final-role-card ${p.role || ''}" style="animation-delay: ${i * 0.2}s;">
             ${renderPlayerAvatar(p, 'large')}
             <h3>${p.name}</h3>
-            <p class="${p.role}">${p.role?.toUpperCase() || 'Unknown'}</p>
-            ${!p.isAlive ? '<span class="executed-badge">EXECUTED</span>' : ''}
+            <p class="${p.role}">${roleDisplayNames[p.role] || 'Unknown'}</p>
+            ${!p.isAlive ? '<span class="executed-badge">DISMISSED</span>' : ''}
         </div>
     `).join('');
 
@@ -1978,25 +1990,25 @@ function hideAllPhases() {
 function updatePolicyTracks() {
     const pub = gameState.public;
 
-    // Liberal track
-    const liberalSlots = document.querySelectorAll('#liberal-slots .policy-slot');
-    liberalSlots.forEach((slot, i) => {
-        slot.classList.toggle('enacted', i < pub.liberalPolicies);
+    // Guest track
+    const guestSlots = document.querySelectorAll('#guest-slots .policy-slot');
+    guestSlots.forEach((slot, i) => {
+        slot.classList.toggle('enacted', i < pub.guestPolicies);
         // Add warning glow to next slot when near win
-        slot.classList.remove('final-policy-warning', 'liberal');
-        if (pub.liberalPolicies >= 4 && i === pub.liberalPolicies) {
-            slot.classList.add('final-policy-warning', 'liberal');
+        slot.classList.remove('final-policy-warning', 'guest');
+        if (pub.guestPolicies >= 4 && i === pub.guestPolicies) {
+            slot.classList.add('final-policy-warning', 'guest');
         }
     });
 
-    // Fascist track
-    const fascistSlots = document.querySelectorAll('#fascist-slots .policy-slot');
-    fascistSlots.forEach((slot, i) => {
-        slot.classList.toggle('enacted', i < pub.fascistPolicies);
+    // Staff track
+    const staffSlots = document.querySelectorAll('#staff-slots .policy-slot');
+    staffSlots.forEach((slot, i) => {
+        slot.classList.toggle('enacted', i < pub.staffPolicies);
         // Add warning glow to next slot when near win
-        slot.classList.remove('final-policy-warning', 'fascist');
-        if (pub.fascistPolicies >= 5 && i === pub.fascistPolicies) {
-            slot.classList.add('final-policy-warning', 'fascist');
+        slot.classList.remove('final-policy-warning', 'staff');
+        if (pub.staffPolicies >= 5 && i === pub.staffPolicies) {
+            slot.classList.add('final-policy-warning', 'staff');
         }
     });
 
@@ -2031,23 +2043,23 @@ function showModal(title, content, onClose) {
     });
 }
 
-// 1945 Wartime Background Animation
-function createWartimeBackground() {
+// Victorian Mansion Background Animation
+function createMansionBackground() {
     const container = document.getElementById('bubbles');
 
-    // Create searchlights
-    createSearchlights(container);
+    // Create candlelight flickers
+    createCandlelights(container);
 
-    // Create initial falling documents
+    // Create initial falling documents (letters, invitations)
     for (let i = 0; i < 5; i++) {
         setTimeout(() => createDocument(container), i * 1000);
     }
 
-    // Create iron cross watermarks
-    createIronCrosses(container);
+    // Create decorative patterns
+    createDecorativePatterns(container);
 
-    // Create artillery flash overlay
-    createArtilleryFlash(container);
+    // Create subtle lighting effects
+    createAmbientLighting(container);
 
     // Continue creating documents periodically
     setInterval(() => {
@@ -2057,16 +2069,16 @@ function createWartimeBackground() {
     }, 3000);
 }
 
-function createSearchlights(container) {
-    // Create 2-3 searchlight beams
+function createCandlelights(container) {
+    // Create flickering candlelight effects
     const positions = [15, 50, 85];
     positions.forEach((pos, index) => {
-        const searchlight = document.createElement('div');
-        searchlight.className = 'searchlight';
-        searchlight.style.left = `${pos}%`;
-        searchlight.style.animationDuration = `${8 + index * 3}s`;
-        searchlight.style.animationDelay = `${index * 2}s`;
-        container.appendChild(searchlight);
+        const candlelight = document.createElement('div');
+        candlelight.className = 'candlelight';
+        candlelight.style.left = `${pos}%`;
+        candlelight.style.animationDuration = `${4 + index * 2}s`;
+        candlelight.style.animationDelay = `${index * 1.5}s`;
+        container.appendChild(candlelight);
     });
 }
 
@@ -2092,8 +2104,8 @@ function createDocument(container) {
     setTimeout(() => doc.remove(), (duration + 2) * 1000);
 }
 
-function createIronCrosses(container) {
-    // Create a few subtle iron cross watermarks
+function createDecorativePatterns(container) {
+    // Create subtle decorative Victorian patterns
     const positions = [
         { x: 10, y: 20, size: 80 },
         { x: 80, y: 60, size: 100 },
@@ -2101,40 +2113,40 @@ function createIronCrosses(container) {
     ];
 
     positions.forEach((pos, index) => {
-        const cross = document.createElement('div');
-        cross.className = 'iron-cross';
-        cross.style.left = `${pos.x}%`;
-        cross.style.top = `${pos.y}%`;
-        cross.style.width = `${pos.size}px`;
-        cross.style.height = `${pos.size}px`;
-        cross.style.animationDelay = `${index * 5}s`;
-        container.appendChild(cross);
+        const pattern = document.createElement('div');
+        pattern.className = 'decorative-pattern';
+        pattern.style.left = `${pos.x}%`;
+        pattern.style.top = `${pos.y}%`;
+        pattern.style.width = `${pos.size}px`;
+        pattern.style.height = `${pos.size}px`;
+        pattern.style.animationDelay = `${index * 5}s`;
+        container.appendChild(pattern);
     });
 }
 
-function createArtilleryFlash(container) {
-    const flash = document.createElement('div');
-    flash.className = 'artillery-flash';
+function createAmbientLighting(container) {
+    const lighting = document.createElement('div');
+    lighting.className = 'ambient-lighting';
 
-    // Randomize flash position periodically
+    // Subtle lighting changes
     setInterval(() => {
-        flash.style.setProperty('--flash-x', `${Math.random() * 100}%`);
-        flash.style.setProperty('--flash-y', `${Math.random() * 30}%`);
+        lighting.style.setProperty('--light-x', `${Math.random() * 100}%`);
+        lighting.style.setProperty('--light-y', `${Math.random() * 30}%`);
     }, 8000);
 
-    container.appendChild(flash);
+    container.appendChild(lighting);
 }
 
 // Legacy alias for backward compatibility
 function createBubbles() {
-    createWartimeBackground();
+    createMansionBackground();
 }
 
 // Confetti
 function createConfetti(winner) {
-    const colors = winner === 'liberal'
+    const colors = winner === 'guest'
         ? ['#1e3a5f', '#2d4a6f', '#d4c5a9', '#b5a642', '#c9a227']
-        : ['#8b0000', '#a31621', '#c9a227', '#d4af37', '#1a1a1a'];
+        : ['#8b4513', '#654321', '#c9a227', '#d4af37', '#2f2f2f'];
 
     for (let i = 0; i < 100; i++) {
         setTimeout(() => {

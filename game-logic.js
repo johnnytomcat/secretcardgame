@@ -1,5 +1,5 @@
 /**
- * Secret Card Game - Core Game Logic Module
+ * Secret Butler - Core Game Logic Module
  *
  * This module contains all pure game logic functions that can be tested independently.
  * It is imported by both server.js and the test suite.
@@ -7,25 +7,25 @@
 
 // Role configurations based on player count
 const roleConfigurations = {
-    4: { liberals: 2, fascists: 1, hitler: 1 },
-    5: { liberals: 3, fascists: 1, hitler: 1 },
-    6: { liberals: 4, fascists: 1, hitler: 1 }
+    4: { guests: 2, staff: 1, butler: 1 },
+    5: { guests: 3, staff: 1, butler: 1 },
+    6: { guests: 4, staff: 1, butler: 1 }
 };
 
-// Player Avatars - emojis with German names
+// Player Avatars - emojis with Victorian mansion names
 const PLAYER_AVATARS = [
-    { emoji: '🦁', name: 'Otto', color: '#f4a460' },
-    { emoji: '🐺', name: 'Heinrich', color: '#708090' },
-    { emoji: '🦊', name: 'Wilhelm', color: '#ff6b35' },
-    { emoji: '🐻', name: 'Friedrich', color: '#8b4513' },
-    { emoji: '🦅', name: 'Karl', color: '#4a90d9' },
-    { emoji: '🐍', name: 'Hans', color: '#228b22' }
+    { emoji: '🦁', name: 'Reginald', color: '#f4a460' },
+    { emoji: '🐺', name: 'Percival', color: '#708090' },
+    { emoji: '🦊', name: 'Theodore', color: '#ff6b35' },
+    { emoji: '🐻', name: 'Bartholomew', color: '#8b4513' },
+    { emoji: '🦅', name: 'Edmund', color: '#4a90d9' },
+    { emoji: '🐍', name: 'Archibald', color: '#228b22' }
 ];
 
 // AI Player names (legacy, now use avatars)
 const AI_NAMES = [
-    'Otto', 'Heinrich', 'Wilhelm', 'Friedrich', 'Karl',
-    'Hans', 'Klaus', 'Ernst', 'Ludwig', 'Werner'
+    'Reginald', 'Percival', 'Theodore', 'Bartholomew', 'Edmund',
+    'Archibald', 'Winston', 'Cornelius', 'Montgomery', 'Sebastian'
 ];
 
 // AI decision delay (ms) for more natural feel
@@ -93,8 +93,8 @@ function createRoom(hostId, hostName, sessionId = null) {
             currentChancellorId: null,
             previousPresidentId: null,
             previousChancellorId: null,
-            liberalPolicies: 0,
-            fascistPolicies: 0,
+            guestPolicies: 0,
+            staffPolicies: 0,
             electionTracker: 0,
             policyDeck: [],
             discardPile: [],
@@ -119,9 +119,9 @@ function assignRoles(room) {
     if (!config) return false;
 
     const roles = [];
-    for (let i = 0; i < config.liberals; i++) roles.push('liberal');
-    for (let i = 0; i < config.fascists; i++) roles.push('fascist');
-    roles.push('hitler');
+    for (let i = 0; i < config.guests; i++) roles.push('guest');
+    for (let i = 0; i < config.staff; i++) roles.push('staff');
+    roles.push('butler');
 
     const shuffledRoles = shuffleArray(roles);
     room.players.forEach((player, index) => {
@@ -132,8 +132,8 @@ function assignRoles(room) {
 
 function initializeDeck(room) {
     room.gameState.policyDeck = [];
-    for (let i = 0; i < 6; i++) room.gameState.policyDeck.push('liberal');
-    for (let i = 0; i < 11; i++) room.gameState.policyDeck.push('fascist');
+    for (let i = 0; i < 6; i++) room.gameState.policyDeck.push('guest');
+    for (let i = 0; i < 11; i++) room.gameState.policyDeck.push('staff');
     room.gameState.policyDeck = shuffleArray(room.gameState.policyDeck);
     room.gameState.discardPile = [];
 }
@@ -150,13 +150,13 @@ function drawPolicies(room, count) {
     return policies;
 }
 
-function getExecutivePower(fascistCount, playerCount) {
+function getExecutivePower(staffCount, playerCount) {
     const powers = {
         4: { 3: 'examine', 4: 'execute', 5: 'execute' },
         5: { 3: 'examine', 4: 'execute', 5: 'execute' },
         6: { 3: 'investigate', 4: 'special-election', 5: 'execute' }
     };
-    return powers[playerCount]?.[fascistCount] || null;
+    return powers[playerCount]?.[staffCount] || null;
 }
 
 function getPublicGameState(room) {
@@ -168,8 +168,8 @@ function getPublicGameState(room) {
         currentChancellorId: room.gameState.currentChancellorId,
         previousPresidentId: room.gameState.previousPresidentId,
         previousChancellorId: room.gameState.previousChancellorId,
-        liberalPolicies: room.gameState.liberalPolicies,
-        fascistPolicies: room.gameState.fascistPolicies,
+        guestPolicies: room.gameState.guestPolicies,
+        staffPolicies: room.gameState.staffPolicies,
         electionTracker: room.gameState.electionTracker,
         deckCount: room.gameState.policyDeck.length,
         executivePower: room.gameState.executivePower,
@@ -212,9 +212,9 @@ function getPrivatePlayerState(room, playerId) {
         state.policies = room.gameState.currentPolicies;
     }
 
-    if (player.role === 'fascist' || player.role === 'hitler') {
+    if (player.role === 'staff' || player.role === 'butler') {
         const teammates = room.players.filter(p =>
-            p.id !== playerId && (p.role === 'fascist' || p.role === 'hitler')
+            p.id !== playerId && (p.role === 'staff' || p.role === 'butler')
         );
         state.teammates = teammates.map(t => ({
             id: t.id,
@@ -249,24 +249,24 @@ function advancePresidency(room) {
 }
 
 function checkWinCondition(room) {
-    if (room.gameState.liberalPolicies >= 5) {
-        room.gameState.winner = 'liberal';
-        room.gameState.winReason = '5 Liberal policies enacted!';
+    if (room.gameState.guestPolicies >= 5) {
+        room.gameState.winner = 'guest';
+        room.gameState.winReason = '5 Guest policies enacted!';
         room.gameState.phase = 'gameover';
         return true;
     }
 
-    if (room.gameState.fascistPolicies >= 6) {
-        room.gameState.winner = 'fascist';
-        room.gameState.winReason = '6 Fascist policies enacted!';
+    if (room.gameState.staffPolicies >= 6) {
+        room.gameState.winner = 'staff';
+        room.gameState.winReason = '6 Staff policies enacted!';
         room.gameState.phase = 'gameover';
         return true;
     }
 
-    const hitler = room.players.find(p => p.role === 'hitler');
-    if (hitler && !hitler.isAlive) {
-        room.gameState.winner = 'liberal';
-        room.gameState.winReason = 'Hitler was assassinated!';
+    const butler = room.players.find(p => p.role === 'butler');
+    if (butler && !butler.isAlive) {
+        room.gameState.winner = 'guest';
+        room.gameState.winReason = 'The Butler was exposed and dismissed!';
         room.gameState.phase = 'gameover';
         return true;
     }
@@ -305,9 +305,9 @@ function handleVotingComplete(room) {
         room.gameState.currentChancellorId = room.gameState.chancellorCandidateId;
 
         const chancellor = room.players.find(p => p.id === room.gameState.currentChancellorId);
-        if (chancellor.role === 'hitler' && room.gameState.fascistPolicies >= 3) {
-            room.gameState.winner = 'fascist';
-            room.gameState.winReason = 'Hitler was elected Chancellor!';
+        if (chancellor.role === 'butler' && room.gameState.staffPolicies >= 3) {
+            room.gameState.winner = 'staff';
+            room.gameState.winReason = 'The Butler was appointed Head of Household!';
             room.gameState.phase = 'gameover';
         } else {
             room.gameState.phase = 'vote-result';
@@ -372,8 +372,8 @@ function resetGameToLobby(room) {
         currentChancellorId: null,
         previousPresidentId: null,
         previousChancellorId: null,
-        liberalPolicies: 0,
-        fascistPolicies: 0,
+        guestPolicies: 0,
+        staffPolicies: 0,
         electionTracker: 0,
         policyDeck: [],
         discardPile: [],
@@ -388,7 +388,7 @@ function resetGameToLobby(room) {
 }
 
 function getInvestigationResult(player) {
-    return player.role === 'liberal' ? 'liberal' : 'fascist';
+    return player.role === 'guest' ? 'guest' : 'staff';
 }
 
 function executePlayer(room, targetId) {
@@ -415,10 +415,10 @@ function handleChaos(room) {
     const policies = drawPolicies(room, 1);
     const policy = policies[0];
 
-    if (policy === 'liberal') {
-        room.gameState.liberalPolicies++;
-    } else if (policy === 'fascist') {
-        room.gameState.fascistPolicies++;
+    if (policy === 'guest') {
+        room.gameState.guestPolicies++;
+    } else if (policy === 'staff') {
+        room.gameState.staffPolicies++;
     }
 
     room.gameState.chaosPolicy = policy;
@@ -431,15 +431,15 @@ class AIBrain {
         this.room = room;
         this.player = player;
         this.role = player.role;
-        this.isFascist = this.role === 'fascist' || this.role === 'hitler';
+        this.isStaff = this.role === 'staff' || this.role === 'butler';
         this.suspicionScores = this.buildSuspicionScores();
     }
 
     getTeammates() {
-        if (!this.isFascist) return [];
+        if (!this.isStaff) return [];
         return this.room.players.filter(p =>
             p.id !== this.player.id &&
-            (p.role === 'fascist' || p.role === 'hitler')
+            (p.role === 'staff' || p.role === 'butler')
         );
     }
 
@@ -479,7 +479,7 @@ class AIBrain {
         const president = this.room.players.find(p => p.id === presidentId);
         const chancellor = this.room.players.find(p => p.id === chancellorId);
 
-        if (this.isFascist) {
+        if (this.isStaff) {
             const teammates = this.getTeammates();
             const teammateIds = teammates.map(t => t.id);
 
@@ -487,7 +487,7 @@ class AIBrain {
                 return Math.random() > 0.1;
             }
 
-            if (chancellor?.role === 'hitler' && this.room.gameState.fascistPolicies >= 3) {
+            if (chancellor?.role === 'butler' && this.room.gameState.staffPolicies >= 3) {
                 return Math.random() > 0.15;
             }
 
@@ -501,11 +501,11 @@ class AIBrain {
                 return Math.random() > 0.25;
             }
 
-            if (this.room.gameState.fascistPolicies >= 4) {
+            if (this.room.gameState.staffPolicies >= 4) {
                 return Math.random() > 0.55;
             }
 
-            if (this.room.gameState.fascistPolicies >= 3) {
+            if (this.room.gameState.staffPolicies >= 3) {
                 return Math.random() > 0.5;
             }
 
@@ -524,15 +524,15 @@ class AIBrain {
 
         if (validCandidates.length === 0) return null;
 
-        if (this.isFascist) {
+        if (this.isStaff) {
             const teammates = this.getTeammates().filter(t =>
                 validCandidates.some(c => c.id === t.id)
             );
 
-            if (teammates.length > 0 && this.room.gameState.fascistPolicies >= 3) {
-                const hitler = teammates.find(t => t.role === 'hitler');
-                if (hitler && Math.random() > 0.2) {
-                    return hitler.id;
+            if (teammates.length > 0 && this.room.gameState.staffPolicies >= 3) {
+                const butler = teammates.find(t => t.role === 'butler');
+                if (butler && Math.random() > 0.2) {
+                    return butler.id;
                 }
             }
 
@@ -557,35 +557,35 @@ class AIBrain {
     choosePresidentPolicies(policies) {
         const allIndices = [0, 1, 2];
 
-        if (this.isFascist) {
-            const fascistIndices = policies.map((p, i) => p === 'fascist' ? i : -1).filter(i => i !== -1);
-            const liberalIndices = policies.map((p, i) => p === 'liberal' ? i : -1).filter(i => i !== -1);
+        if (this.isStaff) {
+            const staffIndices = policies.map((p, i) => p === 'staff' ? i : -1).filter(i => i !== -1);
+            const guestIndices = policies.map((p, i) => p === 'guest' ? i : -1).filter(i => i !== -1);
 
-            if (fascistIndices.length >= 2) {
+            if (staffIndices.length >= 2) {
                 if (Math.random() > 0.15) {
-                    return fascistIndices.slice(0, 2);
-                } else if (liberalIndices.length > 0) {
-                    return [fascistIndices[0], liberalIndices[0]];
+                    return staffIndices.slice(0, 2);
+                } else if (guestIndices.length > 0) {
+                    return [staffIndices[0], guestIndices[0]];
                 }
             }
 
-            if (fascistIndices.length === 1 && liberalIndices.length === 2) {
+            if (staffIndices.length === 1 && guestIndices.length === 2) {
                 if (Math.random() > 0.2) {
-                    return [fascistIndices[0], liberalIndices[0]];
+                    return [staffIndices[0], guestIndices[0]];
                 }
             }
 
             return [0, 1];
         } else {
-            const liberalIndices = policies.map((p, i) => p === 'liberal' ? i : -1).filter(i => i !== -1);
-            const fascistIndices = policies.map((p, i) => p === 'fascist' ? i : -1).filter(i => i !== -1);
+            const guestIndices = policies.map((p, i) => p === 'guest' ? i : -1).filter(i => i !== -1);
+            const staffIndices = policies.map((p, i) => p === 'staff' ? i : -1).filter(i => i !== -1);
 
-            if (liberalIndices.length >= 2) {
-                return liberalIndices.slice(0, 2);
+            if (guestIndices.length >= 2) {
+                return guestIndices.slice(0, 2);
             }
 
-            if (liberalIndices.length === 1) {
-                return [liberalIndices[0], fascistIndices[0]];
+            if (guestIndices.length === 1) {
+                return [guestIndices[0], staffIndices[0]];
             }
 
             return [0, 1];
@@ -598,27 +598,27 @@ class AIBrain {
     }
 
     chooseChancellorEnact(policies) {
-        const liberalIndex = policies.indexOf('liberal');
-        const fascistIndex = policies.indexOf('fascist');
+        const guestIndex = policies.indexOf('guest');
+        const staffIndex = policies.indexOf('staff');
 
-        if (this.isFascist) {
-            if (fascistIndex !== -1 && liberalIndex !== -1) {
-                const fascistPolicies = this.room.gameState.fascistPolicies;
+        if (this.isStaff) {
+            if (staffIndex !== -1 && guestIndex !== -1) {
+                const staffPolicies = this.room.gameState.staffPolicies;
 
-                if (fascistPolicies >= 4) {
-                    return Math.random() > 0.1 ? fascistIndex : liberalIndex;
+                if (staffPolicies >= 4) {
+                    return Math.random() > 0.1 ? staffIndex : guestIndex;
                 }
 
-                if (fascistPolicies <= 1) {
-                    return Math.random() > 0.4 ? fascistIndex : liberalIndex;
+                if (staffPolicies <= 1) {
+                    return Math.random() > 0.4 ? staffIndex : guestIndex;
                 }
 
-                return Math.random() > 0.3 ? fascistIndex : liberalIndex;
+                return Math.random() > 0.3 ? staffIndex : guestIndex;
             }
-            return fascistIndex !== -1 ? fascistIndex : liberalIndex !== -1 ? liberalIndex : 0;
+            return staffIndex !== -1 ? staffIndex : guestIndex !== -1 ? guestIndex : 0;
         } else {
-            if (liberalIndex !== -1) {
-                return liberalIndex;
+            if (guestIndex !== -1) {
+                return guestIndex;
             }
             return 0;
         }
@@ -631,8 +631,8 @@ class AIBrain {
 
         if (targets.length === 0) return null;
 
-        if (this.isFascist) {
-            const liberals = targets.filter(t => t.role === 'liberal');
+        if (this.isStaff) {
+            const guests = targets.filter(t => t.role === 'guest');
             const teammates = this.getTeammates().filter(t =>
                 targets.some(ta => ta.id === t.id)
             );
@@ -641,8 +641,8 @@ class AIBrain {
                 return teammates[Math.floor(Math.random() * teammates.length)].id;
             }
 
-            if (liberals.length > 0) {
-                return liberals[Math.floor(Math.random() * liberals.length)].id;
+            if (guests.length > 0) {
+                return guests[Math.floor(Math.random() * guests.length)].id;
             }
         }
 
@@ -656,7 +656,7 @@ class AIBrain {
 
         if (targets.length === 0) return null;
 
-        if (this.isFascist) {
+        if (this.isStaff) {
             const teammates = this.getTeammates().filter(t => targets.some(ta => ta.id === t.id));
             if (teammates.length > 0 && Math.random() > 0.25) {
                 return teammates[Math.floor(Math.random() * teammates.length)].id;
@@ -673,30 +673,30 @@ class AIBrain {
 
         if (targets.length === 0) return null;
 
-        if (this.isFascist) {
-            const hitler = targets.find(t => t.role === 'hitler');
-            const nonHitlerTargets = targets.filter(t => t.role !== 'hitler');
+        if (this.isStaff) {
+            const butler = targets.find(t => t.role === 'butler');
+            const nonButlerTargets = targets.filter(t => t.role !== 'butler');
 
-            const liberals = nonHitlerTargets.filter(t => t.role === 'liberal');
+            const guests = nonButlerTargets.filter(t => t.role === 'guest');
             const teammates = this.getTeammates().filter(t =>
-                nonHitlerTargets.some(nt => nt.id === t.id)
+                nonButlerTargets.some(nt => nt.id === t.id)
             );
 
-            if (liberals.length > 0) {
+            if (guests.length > 0) {
                 if (Math.random() > 0.1) {
-                    return liberals[Math.floor(Math.random() * liberals.length)].id;
+                    return guests[Math.floor(Math.random() * guests.length)].id;
                 }
             }
 
-            const safeTargets = nonHitlerTargets.filter(t =>
+            const safeTargets = nonButlerTargets.filter(t =>
                 !teammates.some(tm => tm.id === t.id)
             );
             if (safeTargets.length > 0) {
                 return safeTargets[Math.floor(Math.random() * safeTargets.length)].id;
             }
 
-            if (nonHitlerTargets.length > 0) {
-                return nonHitlerTargets[Math.floor(Math.random() * nonHitlerTargets.length)].id;
+            if (nonButlerTargets.length > 0) {
+                return nonButlerTargets[Math.floor(Math.random() * nonButlerTargets.length)].id;
             }
         } else {
             return targets[Math.floor(Math.random() * targets.length)]?.id;

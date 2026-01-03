@@ -1,11 +1,11 @@
-// Player Avatars - emojis with German names
+// Player Avatars - emojis with Victorian mansion names
 const PLAYER_AVATARS = [
-    { emoji: '🦁', name: 'Otto', color: '#f4a460' },
-    { emoji: '🐺', name: 'Heinrich', color: '#708090' },
-    { emoji: '🦊', name: 'Wilhelm', color: '#ff6b35' },
-    { emoji: '🐻', name: 'Friedrich', color: '#8b4513' },
-    { emoji: '🦅', name: 'Karl', color: '#4a90d9' },
-    { emoji: '🐍', name: 'Hans', color: '#228b22' }
+    { emoji: '🦁', name: 'Reginald', color: '#f4a460' },
+    { emoji: '🐺', name: 'Percival', color: '#708090' },
+    { emoji: '🦊', name: 'Theodore', color: '#ff6b35' },
+    { emoji: '🐻', name: 'Bartholomew', color: '#8b4513' },
+    { emoji: '🦅', name: 'Edmund', color: '#4a90d9' },
+    { emoji: '🐍', name: 'Archibald', color: '#228b22' }
 ];
 
 // Helper function to render player avatar HTML
@@ -30,8 +30,8 @@ const gameState = {
     currentChancellor: null,
     previousPresident: null,
     previousChancellor: null,
-    liberalPolicies: 0,
-    fascistPolicies: 0,
+    guestPolicies: 0,
+    staffPolicies: 0,
     electionTracker: 0,
     policyDeck: [],
     discardPile: [],
@@ -40,18 +40,18 @@ const gameState = {
     currentVoterIndex: 0,
     gamePhase: 'setup',
     governmentFailed: false,
-    hitler: null,
-    fascists: [],
-    liberals: [],
+    butler: null,
+    staff: [],
+    guests: [],
     selectableOptions: [],
     keyboardHandler: null
 };
 
 // Role configurations based on player count
 const roleConfigurations = {
-    4: { liberals: 2, fascists: 1, hitler: 1 },
-    5: { liberals: 3, fascists: 1, hitler: 1 },
-    6: { liberals: 4, fascists: 1, hitler: 1 }
+    4: { guests: 2, staff: 1, butler: 1 },
+    5: { guests: 3, staff: 1, butler: 1 },
+    6: { guests: 4, staff: 1, butler: 1 }
 };
 
 // Initialize game
@@ -164,18 +164,18 @@ function assignRoles() {
     const config = roleConfigurations[gameState.playerCount];
     const roles = [];
 
-    // Add liberal roles
-    for (let i = 0; i < config.liberals; i++) {
-        roles.push('liberal');
+    // Add guest roles
+    for (let i = 0; i < config.guests; i++) {
+        roles.push('guest');
     }
 
-    // Add fascist roles
-    for (let i = 0; i < config.fascists; i++) {
-        roles.push('fascist');
+    // Add staff roles
+    for (let i = 0; i < config.staff; i++) {
+        roles.push('staff');
     }
 
-    // Add Hitler
-    roles.push('hitler');
+    // Add Butler
+    roles.push('butler');
 
     // Shuffle roles
     shuffleArray(roles);
@@ -184,12 +184,12 @@ function assignRoles() {
     gameState.players.forEach((player, index) => {
         player.role = roles[index];
 
-        if (player.role === 'hitler') {
-            gameState.hitler = player;
-        } else if (player.role === 'fascist') {
-            gameState.fascists.push(player);
+        if (player.role === 'butler') {
+            gameState.butler = player;
+        } else if (player.role === 'staff') {
+            gameState.staff.push(player);
         } else {
-            gameState.liberals.push(player);
+            gameState.guests.push(player);
         }
     });
 }
@@ -198,12 +198,12 @@ function assignRoles() {
 function initializeDeck() {
     gameState.policyDeck = [];
 
-    // Add 6 liberal and 11 fascist policies
+    // Add 6 guest and 11 staff policies
     for (let i = 0; i < 6; i++) {
-        gameState.policyDeck.push('liberal');
+        gameState.policyDeck.push('guest');
     }
     for (let i = 0; i < 11; i++) {
-        gameState.policyDeck.push('fascist');
+        gameState.policyDeck.push('staff');
     }
 
     shuffleArray(gameState.policyDeck);
@@ -228,41 +228,41 @@ function revealRole() {
     const roleCard = document.querySelector('.role-card');
 
     // Remove previous classes
-    roleCard.classList.remove('liberal', 'fascist', 'hitler');
+    roleCard.classList.remove('guest', 'staff', 'butler');
 
     // Set role information
-    if (currentPlayer.role === 'liberal') {
-        roleName.textContent = 'Liberal';
-        roleDescription.textContent = 'You are a member of the Liberal team. Enact 5 Liberal policies or eliminate Hitler to win!';
-        teamInfo.innerHTML = '<p>You do not know who your teammates are. Trust no one!</p>';
-        roleCard.classList.add('liberal');
-    } else if (currentPlayer.role === 'fascist') {
-        roleName.textContent = 'Fascist';
-        roleDescription.textContent = 'You are a member of the Fascist team. Enact 6 Fascist policies or elect Hitler as Chancellor after 3 Fascist policies to win!';
+    if (currentPlayer.role === 'guest') {
+        roleName.textContent = 'House Guest';
+        roleDescription.textContent = 'You are a House Guest at the mansion. Enact 5 Guest policies or expose the Butler to win!';
+        teamInfo.innerHTML = '<p>You do not know who your fellow guests are. Trust no one!</p>';
+        roleCard.classList.add('guest');
+    } else if (currentPlayer.role === 'staff') {
+        roleName.textContent = 'Home Staff';
+        roleDescription.textContent = 'You are a disgruntled member of the Home Staff. Enact 6 Staff policies or get the Butler appointed as Head of Household after 3 Staff policies to win!';
 
         let teamHtml = '<p><strong>Your team:</strong></p>';
-        teamHtml += `<p>Hitler: ${gameState.hitler.name}</p>`;
-        if (gameState.fascists.length > 0) {
-            teamHtml += '<p>Fellow Fascists: ';
-            teamHtml += gameState.fascists.filter(f => f.id !== currentPlayer.id).map(f => f.name).join(', ') || 'None';
+        teamHtml += `<p>The Butler: ${gameState.butler.name}</p>`;
+        if (gameState.staff.length > 0) {
+            teamHtml += '<p>Fellow Staff: ';
+            teamHtml += gameState.staff.filter(f => f.id !== currentPlayer.id).map(f => f.name).join(', ') || 'None';
             teamHtml += '</p>';
         }
         teamInfo.innerHTML = teamHtml;
-        roleCard.classList.add('fascist');
-    } else if (currentPlayer.role === 'hitler') {
-        roleName.textContent = 'Hitler';
-        roleDescription.textContent = 'You are Hitler! Enact 6 Fascist policies, or get elected as Chancellor after 3 Fascist policies to win! But if you are assassinated, the Liberals win!';
+        roleCard.classList.add('staff');
+    } else if (currentPlayer.role === 'butler') {
+        roleName.textContent = 'The Butler';
+        roleDescription.textContent = 'You are the Butler! Enact 6 Staff policies, or get appointed as Head of Household after 3 Staff policies to win! But if you are exposed, the Guests win!';
 
         let teamHtml = '<p><strong>Your team:</strong></p>';
         if (gameState.playerCount <= 6) {
-            teamHtml += '<p>Fascists: ';
-            teamHtml += gameState.fascists.map(f => f.name).join(', ');
+            teamHtml += '<p>Staff members: ';
+            teamHtml += gameState.staff.map(f => f.name).join(', ');
             teamHtml += '</p>';
         } else {
-            teamHtml += '<p>You do not know who the fascists are!</p>';
+            teamHtml += '<p>You do not know who the staff members are!</p>';
         }
         teamInfo.innerHTML = teamHtml;
-        roleCard.classList.add('hitler');
+        roleCard.classList.add('butler');
     }
 
     // Show role
@@ -454,7 +454,7 @@ function resolveVote() {
         resultsHtml += `
             <div class="vote-result ${v.vote ? 'vote-yes' : 'vote-no'}">
                 <span class="voter-info">${renderPlayerName(v.player)}</span>
-                <span class="vote-choice">${v.vote ? 'Ja!' : 'Nein!'}</span>
+                <span class="vote-choice">${v.vote ? 'Aye!' : 'Nay!'}</span>
             </div>
         `;
     });
@@ -468,9 +468,9 @@ function resolveVote() {
     if (passed) {
         gameState.electionTracker = 0;
 
-        // Check if Hitler was elected as Chancellor after 3 fascist policies
-        if (gameState.currentChancellor.role === 'hitler' && gameState.fascistPolicies >= 3) {
-            endGame('fascist', 'Hitler was elected as Chancellor!');
+        // Check if Butler was elected as Chancellor after 3 staff policies
+        if (gameState.currentChancellor.role === 'butler' && gameState.staffPolicies >= 3) {
+            endGame('staff', 'The Butler was appointed Head of Household!');
             return;
         }
     } else {
@@ -604,25 +604,25 @@ function selectChancellorPolicy(enactIndex) {
 }
 
 function enactPolicy(policy) {
-    if (policy === 'liberal') {
-        gameState.liberalPolicies++;
-        updatePolicyTrack('liberal', gameState.liberalPolicies);
+    if (policy === 'guest') {
+        gameState.guestPolicies++;
+        updatePolicyTrack('guest', gameState.guestPolicies);
 
-        if (gameState.liberalPolicies >= 5) {
-            endGame('liberal', '5 Liberal policies enacted!');
+        if (gameState.guestPolicies >= 5) {
+            endGame('guest', '5 Guest policies enacted!');
             return;
         }
     } else {
-        gameState.fascistPolicies++;
-        updatePolicyTrack('fascist', gameState.fascistPolicies);
+        gameState.staffPolicies++;
+        updatePolicyTrack('staff', gameState.staffPolicies);
 
-        if (gameState.fascistPolicies >= 6) {
-            endGame('fascist', '6 Fascist policies enacted!');
+        if (gameState.staffPolicies >= 6) {
+            endGame('staff', '6 Staff policies enacted!');
             return;
         }
 
         // Check for executive action
-        const power = getExecutivePower(gameState.fascistPolicies, gameState.playerCount);
+        const power = getExecutivePower(gameState.staffPolicies, gameState.playerCount);
         if (power) {
             executePresidentialPower(power);
             return;
@@ -631,11 +631,11 @@ function enactPolicy(policy) {
 
     // Show policy enacted result
     showPhase('results-phase');
-    document.getElementById('results-title').textContent = `${policy === 'liberal' ? 'Liberal' : 'Fascist'} Policy Enacted!`;
+    document.getElementById('results-title').textContent = `${policy === 'guest' ? 'Guest' : 'Staff'} Policy Enacted!`;
     document.getElementById('results-content').innerHTML = `
         <p>The government has enacted a ${policy} policy.</p>
-        <p>Liberal Policies: ${gameState.liberalPolicies}/5</p>
-        <p>Fascist Policies: ${gameState.fascistPolicies}/6</p>
+        <p>Guest Policies: ${gameState.guestPolicies}/5</p>
+        <p>Staff Policies: ${gameState.staffPolicies}/6</p>
     `;
 
     gameState.nextAction = 'advance';
@@ -652,23 +652,23 @@ function enactChaosPolicy() {
     document.getElementById('results-title').textContent = 'Chaos!';
     document.getElementById('results-content').innerHTML = `
         <p>Three governments have failed in a row!</p>
-        <p>The top policy is automatically enacted: <strong>${policy === 'liberal' ? 'Liberal' : 'Fascist'}</strong></p>
+        <p>The top policy is automatically enacted: <strong>${policy === 'guest' ? 'Guest' : 'Staff'}</strong></p>
     `;
 
-    if (policy === 'liberal') {
-        gameState.liberalPolicies++;
-        updatePolicyTrack('liberal', gameState.liberalPolicies);
+    if (policy === 'guest') {
+        gameState.guestPolicies++;
+        updatePolicyTrack('guest', gameState.guestPolicies);
 
-        if (gameState.liberalPolicies >= 5) {
-            endGame('liberal', '5 Liberal policies enacted!');
+        if (gameState.guestPolicies >= 5) {
+            endGame('guest', '5 Guest policies enacted!');
             return;
         }
     } else {
-        gameState.fascistPolicies++;
-        updatePolicyTrack('fascist', gameState.fascistPolicies);
+        gameState.staffPolicies++;
+        updatePolicyTrack('staff', gameState.staffPolicies);
 
-        if (gameState.fascistPolicies >= 6) {
-            endGame('fascist', '6 Fascist policies enacted!');
+        if (gameState.staffPolicies >= 6) {
+            endGame('staff', '6 Staff policies enacted!');
             return;
         }
     }
@@ -677,14 +677,14 @@ function enactChaosPolicy() {
 }
 
 // Executive powers
-function getExecutivePower(fascistCount, playerCount) {
+function getExecutivePower(staffCount, playerCount) {
     const powers = {
         4: { 3: 'examine', 4: 'execute', 5: 'execute' },
         5: { 3: 'examine', 4: 'execute', 5: 'execute' },
         6: { 3: 'investigate', 4: 'special-election', 5: 'execute' }
     };
 
-    return powers[playerCount]?.[fascistCount] || null;
+    return powers[playerCount]?.[staffCount] || null;
 }
 
 function executePresidentialPower(power) {
@@ -748,9 +748,9 @@ function renderInvestigatePower() {
         showPhase('results-phase');
         document.getElementById('results-title').textContent = 'Investigation Result';
         document.getElementById('results-content').innerHTML = `
-            <p>${renderPlayerName(player)}'s party membership is:</p>
-            <h2>${player.role === 'liberal' ? 'Liberal' : 'Fascist'}</h2>
-            <p style="margin-top: 20px; font-size: 0.9em;">Note: Hitler shows as Fascist</p>
+            <p>${renderPlayerName(player)}'s allegiance is:</p>
+            <h2>${player.role === 'guest' ? 'House Guest' : 'Home Staff'}</h2>
+            <p style="margin-top: 20px; font-size: 0.9em;">Note: The Butler shows as Home Staff</p>
         `;
         gameState.nextAction = 'advance';
     });
@@ -766,7 +766,7 @@ function renderExaminePower() {
     topThree.forEach(policy => {
         const card = document.createElement('div');
         card.className = `policy-card ${policy}`;
-        card.textContent = policy === 'liberal' ? 'Liberal' : 'Fascist';
+        card.textContent = policy === 'guest' ? 'Guest' : 'Staff';
         card.style.cursor = 'default';
         cardsDiv.appendChild(card);
     });
@@ -811,15 +811,15 @@ function renderExecutePower() {
         player.isAlive = false;
 
         const roleClass = player.role;
-        const roleName = player.role === 'liberal' ? 'LIBERAL' : player.role === 'fascist' ? 'FASCIST' : 'HITLER';
-        const wasHitler = player.role === 'hitler';
+        const roleName = player.role === 'guest' ? 'HOUSE GUEST' : player.role === 'staff' ? 'HOME STAFF' : 'THE BUTLER';
+        const wasButler = player.role === 'butler';
 
         showPhase('results-phase');
         document.getElementById('results-title').textContent = '';
         document.getElementById('results-content').innerHTML = `
             <div class="execution-result-display">
                 <div class="execution-skull">💀</div>
-                <div class="execution-result-title">EXECUTED</div>
+                <div class="execution-result-title">DISMISSED</div>
                 <div class="execution-victim">
                     ${renderPlayerAvatar(player, 'large')}
                     <div class="execution-victim-name">${player.name}</div>
@@ -828,17 +828,17 @@ function renderExecutePower() {
                     <span class="role-was">Their role was</span>
                     <span class="revealed-role ${roleClass}">${roleName}</span>
                 </div>
-                ${wasHitler ? `
-                    <div class="hitler-killed">
-                        🎉 HITLER HAS BEEN KILLED! 🎉
-                        <div class="liberals-win-soon">Liberals Win!</div>
+                ${wasButler ? `
+                    <div class="butler-exposed">
+                        THE BUTLER HAS BEEN EXPOSED!
+                        <div class="guests-win-soon">House Guests Win!</div>
                     </div>
                 ` : ''}
             </div>
         `;
 
-        if (wasHitler) {
-            endGame('liberal', 'Hitler was assassinated!');
+        if (wasButler) {
+            endGame('guest', 'The Butler was exposed and dismissed!');
         } else {
             gameState.nextAction = 'advance';
         }
@@ -911,10 +911,16 @@ function endGame(winner, reason) {
     showScreen('gameover-screen');
 
     document.getElementById('winner-announcement').textContent =
-        `${winner === 'liberal' ? 'Liberals' : 'Fascists'} Win!`;
+        `${winner === 'guest' ? 'House Guests' : 'Home Staff'} Win!`;
 
     const rolesDiv = document.getElementById('final-roles');
     rolesDiv.innerHTML = `<p style="margin-bottom: 20px;">${reason}</p>`;
+
+    const roleDisplayNames = {
+        'guest': 'House Guest',
+        'staff': 'Home Staff',
+        'butler': 'The Butler'
+    };
 
     gameState.players.forEach((player, index) => {
         const card = document.createElement('div');
@@ -923,7 +929,7 @@ function endGame(winner, reason) {
         card.innerHTML = `
             ${renderPlayerAvatar(player, 'large')}
             <h3>${player.name}</h3>
-            <p>${player.role.charAt(0).toUpperCase() + player.role.slice(1)}</p>
+            <p>${roleDisplayNames[player.role] || player.role}</p>
         `;
         rolesDiv.appendChild(card);
     });
@@ -998,9 +1004,9 @@ function createBubble(container) {
 
 // Confetti for game end
 function createConfetti(winner) {
-    const colors = winner === 'liberal'
+    const colors = winner === 'guest'
         ? ['#1e3a5f', '#2d4a6f', '#d4c5a9', '#b5a642', '#c9a227']
-        : ['#8b0000', '#a31621', '#c9a227', '#d4af37', '#1a1a1a'];
+        : ['#8b4513', '#654321', '#c9a227', '#d4af37', '#2f2f2f'];
 
     for (let i = 0; i < 100; i++) {
         setTimeout(() => {

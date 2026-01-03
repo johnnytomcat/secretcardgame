@@ -62,8 +62,8 @@ function createMockRoom(playerCount) {
             currentChancellorId: null,
             previousPresidentId: null,
             previousChancellorId: null,
-            liberalPolicies: 0,
-            fascistPolicies: 0,
+            guestPolicies: 0,
+            staffPolicies: 0,
             electionTracker: 0,
             policyDeck: [],
             discardPile: [],
@@ -116,8 +116,8 @@ describe('Room Creation and Joining', () => {
         const room = createMockRoom(4);
         expect(room.players).toHaveLength(4);
         expect(room.gameState.phase).toBe('lobby');
-        expect(room.gameState.liberalPolicies).toBe(0);
-        expect(room.gameState.fascistPolicies).toBe(0);
+        expect(room.gameState.guestPolicies).toBe(0);
+        expect(room.gameState.staffPolicies).toBe(0);
     });
 });
 
@@ -127,9 +127,9 @@ describe('Role Assignment', () => {
         assignRoles(room);
 
         const roles = room.players.map(p => p.role);
-        expect(roles.filter(r => r === 'liberal')).toHaveLength(2);
-        expect(roles.filter(r => r === 'fascist')).toHaveLength(1);
-        expect(roles.filter(r => r === 'hitler')).toHaveLength(1);
+        expect(roles.filter(r => r === 'guest')).toHaveLength(2);
+        expect(roles.filter(r => r === 'staff')).toHaveLength(1);
+        expect(roles.filter(r => r === 'butler')).toHaveLength(1);
     });
 
     test('5-player game should have correct role distribution', () => {
@@ -137,9 +137,9 @@ describe('Role Assignment', () => {
         assignRoles(room);
 
         const roles = room.players.map(p => p.role);
-        expect(roles.filter(r => r === 'liberal')).toHaveLength(3);
-        expect(roles.filter(r => r === 'fascist')).toHaveLength(1);
-        expect(roles.filter(r => r === 'hitler')).toHaveLength(1);
+        expect(roles.filter(r => r === 'guest')).toHaveLength(3);
+        expect(roles.filter(r => r === 'staff')).toHaveLength(1);
+        expect(roles.filter(r => r === 'butler')).toHaveLength(1);
     });
 
     test('6-player game should have correct role distribution', () => {
@@ -147,9 +147,9 @@ describe('Role Assignment', () => {
         assignRoles(room);
 
         const roles = room.players.map(p => p.role);
-        expect(roles.filter(r => r === 'liberal')).toHaveLength(4);
-        expect(roles.filter(r => r === 'fascist')).toHaveLength(1);
-        expect(roles.filter(r => r === 'hitler')).toHaveLength(1);
+        expect(roles.filter(r => r === 'guest')).toHaveLength(4);
+        expect(roles.filter(r => r === 'staff')).toHaveLength(1);
+        expect(roles.filter(r => r === 'butler')).toHaveLength(1);
     });
 
     test('Role assignment should be randomized', () => {
@@ -349,7 +349,7 @@ describe('Voting Mechanics', () => {
         const room = createMockRoom(4);
         room.gameState.chancellorCandidateId = 'player_1';
         assignRoles(room);
-        room.players.find(p => p.id === 'player_1').role = 'liberal';
+        room.players.find(p => p.id === 'player_1').role = 'guest';
         room.gameState.electionTracker = 2;
         room.players[0].vote = true;
         room.players[1].vote = true;
@@ -364,7 +364,7 @@ describe('Voting Mechanics', () => {
         const room = createMockRoom(4);
         room.gameState.chancellorCandidateId = 'player_1';
         assignRoles(room);
-        room.players.find(p => p.id === 'player_1').role = 'liberal';
+        room.players.find(p => p.id === 'player_1').role = 'guest';
 
         room.players[0].isAlive = false;
         room.players[0].vote = false;
@@ -377,13 +377,13 @@ describe('Voting Mechanics', () => {
 });
 
 describe('Legislative Session', () => {
-    test('Initial deck should have 17 cards (6 liberal, 11 fascist)', () => {
+    test('Initial deck should have 17 cards (6 guest, 11 staff)', () => {
         const room = createMockRoom(4);
         initializeDeck(room);
 
         expect(room.gameState.policyDeck).toHaveLength(17);
-        expect(room.gameState.policyDeck.filter(p => p === 'liberal')).toHaveLength(6);
-        expect(room.gameState.policyDeck.filter(p => p === 'fascist')).toHaveLength(11);
+        expect(room.gameState.policyDeck.filter(p => p === 'guest')).toHaveLength(6);
+        expect(room.gameState.policyDeck.filter(p => p === 'staff')).toHaveLength(11);
     });
 
     test('Drawing 3 cards should reduce deck by 3', () => {
@@ -399,7 +399,7 @@ describe('Legislative Session', () => {
     test('Drawing cards when deck is empty should reshuffle discard pile', () => {
         const room = createMockRoom(4);
         room.gameState.policyDeck = [];
-        room.gameState.discardPile = ['liberal', 'fascist', 'fascist', 'liberal', 'fascist'];
+        room.gameState.discardPile = ['guest', 'staff', 'staff', 'guest', 'staff'];
 
         const policies = drawPolicies(room, 3);
 
@@ -408,108 +408,108 @@ describe('Legislative Session', () => {
         expect(room.gameState.policyDeck).toHaveLength(2);
     });
 
-    test('Policy cards should only be liberal or fascist', () => {
+    test('Policy cards should only be guest or staff', () => {
         const room = createMockRoom(4);
         initializeDeck(room);
 
         room.gameState.policyDeck.forEach(policy => {
-            expect(['liberal', 'fascist']).toContain(policy);
+            expect(['guest', 'staff']).toContain(policy);
         });
     });
 });
 
 describe('Policy Enactment and Win Conditions', () => {
-    test('5 liberal policies should trigger liberal win', () => {
+    test('5 guest policies should trigger guest win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
-        room.gameState.liberalPolicies = 5;
+        room.gameState.guestPolicies = 5;
 
         expect(checkWinCondition(room)).toBe(true);
-        expect(room.gameState.winner).toBe('liberal');
+        expect(room.gameState.winner).toBe('guest');
         expect(room.gameState.phase).toBe('gameover');
     });
 
-    test('6 fascist policies should trigger fascist win', () => {
+    test('6 staff policies should trigger staff win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
-        room.gameState.fascistPolicies = 6;
+        room.gameState.staffPolicies = 6;
 
         expect(checkWinCondition(room)).toBe(true);
-        expect(room.gameState.winner).toBe('fascist');
+        expect(room.gameState.winner).toBe('staff');
         expect(room.gameState.phase).toBe('gameover');
     });
 
-    test('4 liberal policies should not trigger win', () => {
+    test('4 guest policies should not trigger win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
-        room.gameState.liberalPolicies = 4;
+        room.gameState.guestPolicies = 4;
 
         expect(checkWinCondition(room)).toBe(false);
     });
 
-    test('5 fascist policies should not trigger win', () => {
+    test('5 staff policies should not trigger win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
-        room.gameState.fascistPolicies = 5;
+        room.gameState.staffPolicies = 5;
 
         expect(checkWinCondition(room)).toBe(false);
     });
 });
 
 describe('Executive Powers', () => {
-    test('4-player: 3rd fascist policy triggers examine', () => {
+    test('4-player: 3rd staff policy triggers examine', () => {
         expect(getExecutivePower(3, 4)).toBe('examine');
     });
 
-    test('4-player: 4th fascist policy triggers execute', () => {
+    test('4-player: 4th staff policy triggers execute', () => {
         expect(getExecutivePower(4, 4)).toBe('execute');
     });
 
-    test('4-player: 5th fascist policy triggers execute', () => {
+    test('4-player: 5th staff policy triggers execute', () => {
         expect(getExecutivePower(5, 4)).toBe('execute');
     });
 
-    test('5-player: 3rd fascist policy triggers examine', () => {
+    test('5-player: 3rd staff policy triggers examine', () => {
         expect(getExecutivePower(3, 5)).toBe('examine');
     });
 
-    test('6-player: 3rd fascist policy triggers investigate', () => {
+    test('6-player: 3rd staff policy triggers investigate', () => {
         expect(getExecutivePower(3, 6)).toBe('investigate');
     });
 
-    test('6-player: 4th fascist policy triggers special-election', () => {
+    test('6-player: 4th staff policy triggers special-election', () => {
         expect(getExecutivePower(4, 6)).toBe('special-election');
     });
 
-    test('1st and 2nd fascist policies should not trigger powers', () => {
+    test('1st and 2nd staff policies should not trigger powers', () => {
         expect(getExecutivePower(1, 4)).toBeNull();
         expect(getExecutivePower(2, 4)).toBeNull();
     });
 });
 
-describe('Hitler Win Conditions', () => {
-    test('Hitler elected as chancellor with 3+ fascist policies = fascist win', () => {
+describe('Butler Win Conditions', () => {
+    test('Butler elected as chancellor with 3+ staff policies = staff win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
 
-        const hitler = room.players.find(p => p.role === 'hitler');
-        room.gameState.chancellorCandidateId = hitler.id;
-        room.gameState.fascistPolicies = 3;
+        const butler = room.players.find(p => p.role === 'butler');
+        room.gameState.chancellorCandidateId = butler.id;
+        room.gameState.staffPolicies = 3;
         room.players.forEach(p => p.vote = true);
 
         handleVotingComplete(room);
 
-        expect(room.gameState.winner).toBe('fascist');
+        expect(room.gameState.winner).toBe('staff');
         expect(room.gameState.phase).toBe('gameover');
     });
 
-    test('Hitler elected with < 3 fascist policies = no win', () => {
+    test('Butler elected with < 3 staff policies = no win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
 
-        const hitler = room.players.find(p => p.role === 'hitler');
-        room.gameState.chancellorCandidateId = hitler.id;
-        room.gameState.fascistPolicies = 2;
+        const butler = room.players.find(p => p.role === 'butler');
+        room.gameState.chancellorCandidateId = butler.id;
+        room.gameState.staffPolicies = 2;
         room.players.forEach(p => p.vote = true);
 
         handleVotingComplete(room);
@@ -517,15 +517,15 @@ describe('Hitler Win Conditions', () => {
         expect(room.gameState.winner).toBeNull();
     });
 
-    test('Killing Hitler should trigger liberal win', () => {
+    test('Dismissing Butler should trigger guest win', () => {
         const room = createMockRoom(4);
         assignRoles(room);
 
-        const hitler = room.players.find(p => p.role === 'hitler');
-        hitler.isAlive = false;
+        const butler = room.players.find(p => p.role === 'butler');
+        butler.isAlive = false;
 
         expect(checkWinCondition(room)).toBe(true);
-        expect(room.gameState.winner).toBe('liberal');
+        expect(room.gameState.winner).toBe('guest');
     });
 });
 
@@ -567,16 +567,16 @@ describe('Execution Mechanics', () => {
 });
 
 describe('Investigation Mechanics', () => {
-    test('Liberal should show liberal party', () => {
-        expect(getInvestigationResult({ role: 'liberal' })).toBe('liberal');
+    test('Guest should show guest party', () => {
+        expect(getInvestigationResult({ role: 'guest' })).toBe('guest');
     });
 
-    test('Fascist should show fascist party', () => {
-        expect(getInvestigationResult({ role: 'fascist' })).toBe('fascist');
+    test('Staff should show staff party', () => {
+        expect(getInvestigationResult({ role: 'staff' })).toBe('staff');
     });
 
-    test('Hitler should show fascist party', () => {
-        expect(getInvestigationResult({ role: 'hitler' })).toBe('fascist');
+    test('Butler should show staff party', () => {
+        expect(getInvestigationResult({ role: 'butler' })).toBe('staff');
     });
 });
 
@@ -606,11 +606,11 @@ describe('Chaos Mechanics', () => {
     test('handleChaos should enact a policy', () => {
         const room = createMockRoom(4);
         initializeDeck(room);
-        const initialTotal = room.gameState.liberalPolicies + room.gameState.fascistPolicies;
+        const initialTotal = room.gameState.guestPolicies + room.gameState.staffPolicies;
 
         handleChaos(room);
 
-        const newTotal = room.gameState.liberalPolicies + room.gameState.fascistPolicies;
+        const newTotal = room.gameState.guestPolicies + room.gameState.staffPolicies;
         expect(newTotal).toBe(initialTotal + 1);
         expect(room.gameState.chaosPolicy).toBeDefined();
     });
@@ -676,24 +676,24 @@ describe('AIBrain Decision Making', () => {
         expect(brain.role).toBe(player.role);
     });
 
-    test('AIBrain.getTeammates should return teammates for fascist', () => {
+    test('AIBrain.getTeammates should return teammates for staff', () => {
         const room = createMockRoom(5);
         assignRoles(room);
-        const fascist = room.players.find(p => p.role === 'fascist');
+        const staff = room.players.find(p => p.role === 'staff');
 
-        const brain = new AIBrain(room, fascist);
+        const brain = new AIBrain(room, staff);
         const teammates = brain.getTeammates();
 
         expect(teammates.length).toBeGreaterThanOrEqual(1);
-        expect(teammates.some(t => t.role === 'hitler')).toBe(true);
+        expect(teammates.some(t => t.role === 'butler')).toBe(true);
     });
 
-    test('AIBrain.getTeammates should return empty for liberal', () => {
+    test('AIBrain.getTeammates should return empty for guest', () => {
         const room = createMockRoom(4);
         assignRoles(room);
-        const liberal = room.players.find(p => p.role === 'liberal');
+        const guest = room.players.find(p => p.role === 'guest');
 
-        const brain = new AIBrain(room, liberal);
+        const brain = new AIBrain(room, guest);
 
         expect(brain.getTeammates()).toHaveLength(0);
     });
@@ -725,7 +725,7 @@ describe('AIBrain Decision Making', () => {
         assignRoles(room);
 
         const brain = new AIBrain(room, room.players[0]);
-        const indices = brain.choosePresidentPolicies(['liberal', 'fascist', 'fascist']);
+        const indices = brain.choosePresidentPolicies(['guest', 'staff', 'staff']);
 
         expect(indices).toHaveLength(2);
         expect(indices[0]).toBeGreaterThanOrEqual(0);
@@ -739,7 +739,7 @@ describe('AIBrain Decision Making', () => {
         assignRoles(room);
 
         const brain = new AIBrain(room, room.players[0]);
-        const index = brain.chooseChancellorEnact(['liberal', 'fascist']);
+        const index = brain.chooseChancellorEnact(['guest', 'staff']);
 
         expect([0, 1]).toContain(index);
     });
@@ -813,23 +813,23 @@ describe('Public/Private Game State', () => {
         expect(privateState.role).toBeDefined();
     });
 
-    test('getPrivatePlayerState should show teammates to fascist', () => {
+    test('getPrivatePlayerState should show teammates to staff', () => {
         const room = createMockRoom(5);
         assignRoles(room);
-        const fascist = room.players.find(p => p.role === 'fascist');
+        const staff = room.players.find(p => p.role === 'staff');
 
-        const privateState = getPrivatePlayerState(room, fascist.id);
+        const privateState = getPrivatePlayerState(room, staff.id);
 
         expect(privateState.teammates).not.toBeNull();
         expect(privateState.teammates.length).toBeGreaterThanOrEqual(1);
     });
 
-    test('getPrivatePlayerState should not show teammates to liberal', () => {
+    test('getPrivatePlayerState should not show teammates to guest', () => {
         const room = createMockRoom(4);
         assignRoles(room);
-        const liberal = room.players.find(p => p.role === 'liberal');
+        const guest = room.players.find(p => p.role === 'guest');
 
-        const privateState = getPrivatePlayerState(room, liberal.id);
+        const privateState = getPrivatePlayerState(room, guest.id);
 
         expect(privateState.teammates).toBeNull();
     });
@@ -846,16 +846,16 @@ describe('Game Reset', () => {
         const room = createMockRoom(4);
         assignRoles(room);
         room.gameState.phase = 'gameover';
-        room.gameState.winner = 'liberal';
-        room.gameState.fascistPolicies = 3;
-        room.gameState.liberalPolicies = 5;
+        room.gameState.winner = 'guest';
+        room.gameState.staffPolicies = 3;
+        room.gameState.guestPolicies = 5;
 
         resetGameToLobby(room);
 
         expect(room.gameState.phase).toBe('lobby');
         expect(room.gameState.winner).toBeNull();
-        expect(room.gameState.liberalPolicies).toBe(0);
-        expect(room.gameState.fascistPolicies).toBe(0);
+        expect(room.gameState.guestPolicies).toBe(0);
+        expect(room.gameState.staffPolicies).toBe(0);
     });
 
     test('resetGameToLobby should remove AI players', () => {
@@ -1054,10 +1054,10 @@ describe('Player Status Bar Data', () => {
         assignRoles(room);
         room.gameState.currentPresidentIndex = 0;
         room.gameState.chancellorCandidateId = 'player_2';
-        room.gameState.fascistPolicies = 0;
+        room.gameState.staffPolicies = 0;
 
-        // Make player_2 a liberal to avoid Hitler win
-        room.players[2].role = 'liberal';
+        // Make player_2 a guest to avoid Butler win
+        room.players[2].role = 'guest';
         room.players.forEach(p => p.vote = true);
 
         handleVotingComplete(room);
@@ -1088,13 +1088,13 @@ describe('Player Status Bar Data', () => {
 
     test('getPublicGameState should include policy counts', () => {
         const room = createMockRoom(4);
-        room.gameState.liberalPolicies = 3;
-        room.gameState.fascistPolicies = 2;
+        room.gameState.guestPolicies = 3;
+        room.gameState.staffPolicies = 2;
 
         const publicState = getPublicGameState(room);
 
-        expect(publicState.liberalPolicies).toBe(3);
-        expect(publicState.fascistPolicies).toBe(2);
+        expect(publicState.guestPolicies).toBe(3);
+        expect(publicState.staffPolicies).toBe(2);
     });
 
     test('getPublicGameState should include deck count', () => {

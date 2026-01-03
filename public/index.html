@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secret Card Game</title>
+    <title>Secret Butler</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- 1945 Wartime Animated Background -->
+    <!-- Victorian Mansion Animated Background -->
     <div class="bubbles" id="bubbles"></div>
 
     <!-- Settings Menu -->
@@ -41,36 +41,36 @@
 
             <div class="help-section">
                 <h3>Overview</h3>
-                <p>A social deduction game set in 1930s Germany. Liberals work together to stop the Fascists from seizing power, while Fascists secretly conspire to elect their leader.</p>
+                <p>A social deduction game set in a Victorian mansion. House Guests work together to maintain order, while the disgruntled Home Staff secretly conspire to put their Butler in charge.</p>
             </div>
 
             <div class="help-section">
                 <h3>Teams & Roles</h3>
                 <p><strong>Role Distribution (4-6 players):</strong></p>
                 <ul>
-                    <li><strong>4 players:</strong> 2 Liberals, 1 Fascist, 1 Hitler</li>
-                    <li><strong>5 players:</strong> 3 Liberals, 1 Fascist, 1 Hitler</li>
-                    <li><strong>6 players:</strong> 4 Liberals, 1 Fascist, 1 Hitler</li>
+                    <li><strong>4 players:</strong> 2 House Guests, 1 Home Staff, 1 Butler</li>
+                    <li><strong>5 players:</strong> 3 House Guests, 1 Home Staff, 1 Butler</li>
+                    <li><strong>6 players:</strong> 4 House Guests, 1 Home Staff, 1 Butler</li>
                 </ul>
                 <p style="margin-top: 10px;"><strong>Team Knowledge:</strong></p>
                 <ul>
-                    <li><strong>Liberals:</strong> Don't know anyone's role</li>
-                    <li><strong>Fascists:</strong> Know who Hitler is</li>
-                    <li><strong>Hitler:</strong> Doesn't know who the Fascists are</li>
+                    <li><strong>House Guests:</strong> Don't know anyone's role</li>
+                    <li><strong>Home Staff:</strong> Know who the Butler is</li>
+                    <li><strong>The Butler:</strong> Doesn't know who the Staff members are</li>
                 </ul>
             </div>
 
             <div class="help-section">
                 <h3>How to Win</h3>
-                <p><strong>Liberals Win If:</strong></p>
+                <p><strong>House Guests Win If:</strong></p>
                 <ul>
-                    <li>5 Liberal policies are enacted, OR</li>
-                    <li>Hitler is executed</li>
+                    <li>5 Guest policies are enacted, OR</li>
+                    <li>The Butler is exposed and dismissed</li>
                 </ul>
-                <p style="margin-top: 10px;"><strong>Fascists Win If:</strong></p>
+                <p style="margin-top: 10px;"><strong>Home Staff Win If:</strong></p>
                 <ul>
-                    <li>6 Fascist policies are enacted, OR</li>
-                    <li>Hitler is elected Chancellor after 3+ Fascist policies are enacted</li>
+                    <li>6 Staff policies are enacted, OR</li>
+                    <li>The Butler is appointed Head of Household after 3+ Staff policies are enacted</li>
                 </ul>
             </div>
 
@@ -78,7 +78,7 @@
                 <h3>Game Flow</h3>
                 <ol>
                     <li><strong>Election:</strong> The President nominates a Chancellor candidate.</li>
-                    <li><strong>Voting:</strong> All players vote JA (Yes) or NEIN (No). Majority wins.</li>
+                    <li><strong>Voting:</strong> All players vote AYE (Yes) or NAY (No). Majority wins.</li>
                     <li><strong>Legislative Session:</strong> If the vote passes:
                         <ul>
                             <li>President draws 3 policies, passes 2 to Chancellor</li>
@@ -92,18 +92,18 @@
 
             <div class="help-section">
                 <h3>Executive Powers</h3>
-                <p>When Fascist policies are enacted, the President gains powers:</p>
+                <p>When Staff policies are enacted, the President gains powers:</p>
                 <ul>
-                    <li><strong>3rd Fascist Policy:</strong> Examine top 3 cards in the deck</li>
-                    <li><strong>4th Fascist Policy:</strong> Execute a player</li>
-                    <li><strong>5th Fascist Policy:</strong> Execute a player</li>
+                    <li><strong>3rd Staff Policy:</strong> Examine top 3 cards in the deck</li>
+                    <li><strong>4th Staff Policy:</strong> Dismiss a player</li>
+                    <li><strong>5th Staff Policy:</strong> Dismiss a player</li>
                 </ul>
-                <p style="margin-top: 10px;"><strong>Execution Rules:</strong></p>
+                <p style="margin-top: 10px;"><strong>Dismissal Rules:</strong></p>
                 <ul>
-                    <li>The President must choose a player to execute</li>
-                    <li>Executed players are eliminated and cannot vote or hold office</li>
-                    <li>If Hitler is executed, Liberals win immediately!</li>
-                    <li>The executed player's role is revealed to all</li>
+                    <li>The President must choose a player to dismiss from the mansion</li>
+                    <li>Dismissed players are eliminated and cannot vote or hold office</li>
+                    <li>If the Butler is dismissed, House Guests win immediately!</li>
+                    <li>The dismissed player's role is revealed to all</li>
                 </ul>
             </div>
 
@@ -111,7 +111,7 @@
                 <h3>Special Rules</h3>
                 <ul>
                     <li><strong>Term Limits:</strong> The previous President and Chancellor cannot be nominated as Chancellor</li>
-                    <li><strong>Hitler Danger Zone:</strong> After 3 Fascist policies, electing Hitler as Chancellor wins the game for Fascists</li>
+                    <li><strong>Butler Danger Zone:</strong> After 3 Staff policies, appointing the Butler as Chancellor wins the game for the Home Staff</li>
                     <li><strong>Election Tracker:</strong> If 3 governments fail in a row, the top policy is automatically enacted (chaos!)</li>
                     <li><strong>Deck Reshuffle:</strong> When fewer than 3 cards remain, the deck is reshuffled</li>
                 </ul>
@@ -120,9 +120,9 @@
             <div class="help-section">
                 <h3>Strategy Tips</h3>
                 <ul>
-                    <li><strong>Liberals:</strong> Pay attention to voting patterns and policy claims. Trust no one completely!</li>
-                    <li><strong>Fascists:</strong> Blend in with Liberals. Create confusion and distrust.</li>
-                    <li><strong>Hitler:</strong> Act like a Liberal. Your team wins if you become Chancellor late game.</li>
+                    <li><strong>House Guests:</strong> Pay attention to voting patterns and policy claims. Trust no one completely!</li>
+                    <li><strong>Home Staff:</strong> Blend in with the Guests. Create confusion and distrust.</li>
+                    <li><strong>The Butler:</strong> Act like a Guest. Your team wins if you become Chancellor late game.</li>
                 </ul>
             </div>
         </div>
@@ -132,8 +132,8 @@
         <!-- Lobby Screen -->
         <div id="lobby-screen" class="screen active">
             <div class="container">
-                <h1>Secret Card Game</h1>
-                <p class="subtitle">A social deduction game for 4-6 players</p>
+                <h1>Secret Butler</h1>
+                <p class="subtitle">A Victorian mansion social deduction game for 4-6 players</p>
 
                 <div id="join-create-section">
                     <div class="input-group">
@@ -202,9 +202,9 @@
             <div class="game-header">
                 <div class="board-status">
                     <div class="policy-track">
-                        <div class="track liberal-track">
-                            <h4>Liberal Policies</h4>
-                            <div class="policy-slots" id="liberal-slots">
+                        <div class="track guest-track">
+                            <h4>Guest Policies</h4>
+                            <div class="policy-slots" id="guest-slots">
                                 <div class="policy-slot"></div>
                                 <div class="policy-slot"></div>
                                 <div class="policy-slot"></div>
@@ -212,9 +212,9 @@
                                 <div class="policy-slot"></div>
                             </div>
                         </div>
-                        <div class="track fascist-track">
-                            <h4>Fascist Policies</h4>
-                            <div class="policy-slots" id="fascist-slots">
+                        <div class="track staff-track">
+                            <h4>Staff Policies</h4>
+                            <div class="policy-slots" id="staff-slots">
                                 <div class="policy-slot"></div>
                                 <div class="policy-slot"></div>
                                 <div class="policy-slot"></div>
@@ -246,8 +246,8 @@
                     <p id="vote-info"></p>
                     <div id="voting-area">
                         <div id="vote-buttons" class="vote-buttons">
-                            <button id="vote-yes" class="btn btn-yes">JA! (Yes)</button>
-                            <button id="vote-no" class="btn btn-no">NEIN! (No)</button>
+                            <button id="vote-yes" class="btn btn-yes">AYE! (Yes)</button>
+                            <button id="vote-no" class="btn btn-no">NAY! (No)</button>
                         </div>
                         <p id="vote-waiting" class="hidden">Waiting for other players...</p>
                     </div>
@@ -303,9 +303,9 @@
                     <div id="executive-action"></div>
                 </div>
 
-                <!-- Execution Result Phase -->
+                <!-- Dismissal Result Phase -->
                 <div id="execution-result-phase" class="phase hidden">
-                    <h2>Execution</h2>
+                    <h2>Dismissal</h2>
                     <div id="execution-content"></div>
                     <button id="continue-from-execution" class="btn btn-primary">Continue</button>
                 </div>

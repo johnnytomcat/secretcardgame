@@ -63,8 +63,8 @@ function createRoom(hostId, hostName, sessionId = null) {
             currentChancellorId: null,
             previousPresidentId: null,
             previousChancellorId: null,
-            liberalPolicies: 0,
-            fascistPolicies: 0,
+            guestPolicies: 0,
+            staffPolicies: 0,
             electionTracker: 0,
             policyDeck: [],
             discardPile: [],
@@ -241,10 +241,10 @@ function processAIChancellorLegislative(room) {
         room.gameState.discardPile.push(room.gameState.currentPolicies[discardIndex]);
         room.gameState.currentPolicies = [];
 
-        if (enacted === 'liberal') {
-            room.gameState.liberalPolicies++;
+        if (enacted === 'guest') {
+            room.gameState.guestPolicies++;
         } else {
-            room.gameState.fascistPolicies++;
+            room.gameState.staffPolicies++;
         }
 
         room.gameState.enactedPolicy = enacted;
@@ -348,10 +348,10 @@ function handleContinueFromVote(room) {
     } else {
         if (room.gameState.electionTracker >= 3) {
             const [policy] = drawPolicies(room, 1);
-            if (policy === 'liberal') {
-                room.gameState.liberalPolicies++;
+            if (policy === 'guest') {
+                room.gameState.guestPolicies++;
             } else {
-                room.gameState.fascistPolicies++;
+                room.gameState.staffPolicies++;
             }
             room.gameState.electionTracker = 0;
             room.gameState.chaosPolicy = policy;
@@ -375,8 +375,8 @@ function handleContinueFromPolicy(room) {
         return;
     }
 
-    if (room.gameState.enactedPolicy === 'fascist') {
-        const power = getExecutivePower(room.gameState.fascistPolicies, room.players.length);
+    if (room.gameState.enactedPolicy === 'staff') {
+        const power = getExecutivePower(room.gameState.staffPolicies, room.players.length);
         if (power) {
             room.gameState.executivePower = power;
             room.gameState.phase = 'executive';
@@ -427,9 +427,9 @@ function handleVotingComplete(room) {
         room.gameState.currentChancellorId = room.gameState.chancellorCandidateId;
 
         const chancellor = room.players.find(p => p.id === room.gameState.currentChancellorId);
-        if (chancellor.role === 'hitler' && room.gameState.fascistPolicies >= 3) {
-            room.gameState.winner = 'fascist';
-            room.gameState.winReason = 'Hitler was elected Chancellor!';
+        if (chancellor.role === 'butler' && room.gameState.staffPolicies >= 3) {
+            room.gameState.winner = 'staff';
+            room.gameState.winReason = 'The Butler was appointed Head of Household!';
             room.gameState.phase = 'gameover';
         } else {
             room.gameState.phase = 'vote-result';
@@ -726,10 +726,10 @@ io.on('connection', (socket) => {
         room.gameState.discardPile.push(room.gameState.currentPolicies[discardIndex]);
         room.gameState.currentPolicies = [];
 
-        if (enacted === 'liberal') {
-            room.gameState.liberalPolicies++;
+        if (enacted === 'guest') {
+            room.gameState.guestPolicies++;
         } else {
-            room.gameState.fascistPolicies++;
+            room.gameState.staffPolicies++;
         }
 
         room.gameState.enactedPolicy = enacted;
@@ -763,7 +763,7 @@ io.on('connection', (socket) => {
         // Send investigation result only to president
         socket.emit('investigationResult', {
             targetName: target.name,
-            party: target.role === 'liberal' ? 'liberal' : 'fascist'
+            party: target.role === 'guest' ? 'guest' : 'staff'
         });
 
         room.gameState.executivePower = null;
@@ -886,8 +886,8 @@ io.on('connection', (socket) => {
             currentChancellorId: null,
             previousPresidentId: null,
             previousChancellorId: null,
-            liberalPolicies: 0,
-            fascistPolicies: 0,
+            guestPolicies: 0,
+            staffPolicies: 0,
             electionTracker: 0,
             policyDeck: [],
             discardPile: [],
