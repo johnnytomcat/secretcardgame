@@ -103,6 +103,8 @@ function createRoom(hostId, hostName, sessionId = null) {
             votes: [],
             executivePower: null,
             executedPlayer: null,
+            investigatedPlayers: [],  // Track who has been investigated (per rules: no player may be investigated twice)
+            vetoRequested: false,  // Track if Chancellor has requested a veto (available after 5 fascist policies)
             winner: null,
             winReason: null
         }
@@ -150,6 +152,17 @@ function drawPolicies(room, count) {
     return policies;
 }
 
+// Per official rules: reshuffle when fewer than 3 cards remain at end of legislative session
+function reshuffleDeckIfNeeded(room) {
+    if (room.gameState.policyDeck.length < 3) {
+        room.gameState.policyDeck = shuffleArray([
+            ...room.gameState.policyDeck,
+            ...room.gameState.discardPile
+        ]);
+        room.gameState.discardPile = [];
+    }
+}
+
 function getExecutivePower(staffCount, playerCount) {
     const powers = {
         4: { 3: 'examine', 4: 'execute', 5: 'execute' },
@@ -176,6 +189,8 @@ function getPublicGameState(room) {
         enactedPolicy: room.gameState.enactedPolicy,
         chaosPolicy: room.gameState.chaosPolicy,
         executedPlayer: room.gameState.executedPlayer,
+        investigatedPlayers: room.gameState.investigatedPlayers || [],  // Track who has been investigated
+        vetoRequested: room.gameState.vetoRequested || false,  // Track if veto has been requested
         winner: room.gameState.winner,
         winReason: room.gameState.winReason,
         players: room.players.map(p => ({
@@ -281,7 +296,9 @@ function isValidChancellorCandidate(room, candidateId) {
     if (!candidate || !candidate.isAlive) return false;
     if (candidateId === president.id) return false;
     if (candidateId === room.gameState.previousChancellorId) return false;
-    if (room.players.length > 5 && candidateId === room.gameState.previousPresidentId) return false;
+    // Per official rules: previous president only ineligible if MORE than 5 players ALIVE
+    const alivePlayers = room.players.filter(p => p.isAlive);
+    if (alivePlayers.length > 5 && candidateId === room.gameState.previousPresidentId) return false;
 
     return true;
 }
@@ -382,6 +399,8 @@ function resetGameToLobby(room) {
         votes: [],
         executivePower: null,
         executedPlayer: null,
+        investigatedPlayers: [],
+        vetoRequested: false,
         winner: null,
         winReason: null
     };
@@ -514,6 +533,7 @@ class AIBrain {
     }
 
     chooseChancellor() {
+        // Per official rules: previous president only ineligible if MORE than 5 players ALIVE
         const alivePlayers = this.room.players.filter(p => p.isAlive);
         const validCandidates = this.room.players.filter(p =>
             p.isAlive &&
@@ -625,8 +645,10 @@ class AIBrain {
     }
 
     chooseInvestigateTarget() {
+        // Per official rules: No player may be investigated twice in the same game
+        const investigatedPlayers = this.room.gameState.investigatedPlayers || [];
         const targets = this.room.players.filter(p =>
-            p.isAlive && p.id !== this.player.id
+            p.isAlive && p.id !== this.player.id && !investigatedPlayers.includes(p.id)
         );
 
         if (targets.length === 0) return null;
@@ -664,6 +686,42 @@ class AIBrain {
         }
 
         return targets[Math.floor(Math.random() * targets.length)]?.id;
+    }
+
+    // Decide whether to request veto as Chancellor (only available after 5 staff policies)
+    shouldRequestVeto(policies) {
+        // Veto only available after 5 fascist policies
+        if (this.room.gameState.staffPolicies < 5) return false;
+
+        const hasGuest = policies.includes('guest');
+        const hasStaff = policies.includes('staff');
+
+        if (this.isStaff) {
+            // Staff might veto to waste time or if both policies are guest
+            if (!hasStaff) {
+                return Math.random() > 0.3;  // 70% chance to veto if no staff policy available
+            }
+            // Generally don't veto if we have a staff policy to enact
+            return false;
+        } else {
+            // Guests might veto if both policies are staff
+            if (!hasGuest) {
+                return Math.random() > 0.2;  // 80% chance to veto if no guest policy available
+            }
+            // Generally don't veto if we have a guest policy to enact
+            return false;
+        }
+    }
+
+    // Decide whether to accept veto as President
+    shouldAcceptVeto() {
+        if (this.isStaff) {
+            // Staff generally accept veto to slow things down
+            return Math.random() > 0.4;  // 60% chance to accept
+        } else {
+            // Guests generally accept veto to prevent staff policies
+            return Math.random() > 0.3;  // 70% chance to accept
+        }
     }
 
     chooseExecutionTarget() {
@@ -730,6 +788,7 @@ module.exports = {
     assignRoles,
     initializeDeck,
     drawPolicies,
+    reshuffleDeckIfNeeded,
     getExecutivePower,
     getPublicGameState,
     getPrivatePlayerState,

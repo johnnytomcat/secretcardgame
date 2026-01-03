@@ -1377,6 +1377,20 @@ function chancellorEnact(index) {
     soundManager.cardSelect();
 }
 
+function requestVeto() {
+    socket.emit('requestVeto', gameState.roomCode);
+    soundManager.vetoProposed();
+}
+
+function respondToVeto(accept) {
+    socket.emit('respondToVeto', { code: gameState.roomCode, accept });
+    if (accept) {
+        soundManager.vetoApproved();
+    } else {
+        soundManager.vetoRejected();
+    }
+}
+
 function executePlayer(targetId) {
     socket.emit('execute', { code: gameState.roomCode, targetId });
     soundManager.playerSelect();
@@ -1759,16 +1773,80 @@ function renderLegislativePhase() {
                 `${renderPlayerName(president)} (President) is reviewing policies ${AnimationHelper.createWaitingDots()}`;
         }
     } else if (pub.phase === 'legislative-chancellor') {
-        if (priv?.isChancellor && priv?.policies) {
+        // Check if veto was requested
+        if (pub.vetoRequested) {
+            // Veto has been requested - show appropriate UI
+            if (priv?.isPresident) {
+                // President must respond to veto
+                document.getElementById('legislative-chancellor-phase').classList.remove('hidden');
+                document.getElementById('legislative-chancellor-info').innerHTML = `
+                    <div class="veto-request">
+                        <div class="veto-icon">🚫</div>
+                        <div class="veto-title">VETO REQUESTED</div>
+                        <div class="veto-text">The Chancellor wishes to veto this agenda.</div>
+                        <div class="veto-text">Do you consent to the veto?</div>
+                    </div>
+                `;
+                document.getElementById('chancellor-policies').innerHTML = `
+                    <div class="veto-response-buttons">
+                        <button class="btn btn-primary veto-accept" onclick="respondToVeto(true)">
+                            ✓ Accept Veto
+                        </button>
+                        <button class="btn btn-danger veto-reject" onclick="respondToVeto(false)">
+                            ✗ Reject Veto
+                        </button>
+                    </div>
+                    <p class="veto-warning">Accepting will discard both policies and advance the election tracker.</p>
+                `;
+            } else if (priv?.isChancellor) {
+                // Chancellor is waiting for president response
+                document.getElementById('legislative-chancellor-phase').classList.remove('hidden');
+                document.getElementById('legislative-chancellor-info').innerHTML = `
+                    <div class="veto-request">
+                        <div class="veto-icon">🚫</div>
+                        <div class="veto-title">VETO REQUESTED</div>
+                        <div class="veto-text">Waiting for President to respond ${AnimationHelper.createWaitingDots()}</div>
+                    </div>
+                `;
+                document.getElementById('chancellor-policies').innerHTML = '';
+            } else {
+                // Other players waiting
+                document.getElementById('legislative-waiting-phase').classList.remove('hidden');
+                const chancellor = pub.players.find(p => p.id === pub.currentChancellorId);
+                const president = pub.players.find(p => p.id === pub.currentPresidentId);
+                document.getElementById('legislative-waiting-info').innerHTML = `
+                    <div class="veto-request-notice">
+                        <span class="veto-badge">VETO REQUESTED</span>
+                        <br>${renderPlayerName(chancellor)} requested a veto.
+                        <br>${renderPlayerName(president)} is deciding ${AnimationHelper.createWaitingDots()}
+                    </div>
+                `;
+            }
+        } else if (priv?.isChancellor && priv?.policies) {
             document.getElementById('legislative-chancellor-phase').classList.remove('hidden');
-            document.getElementById('legislative-chancellor-info').textContent =
-                'Choose a policy to ENACT:';
 
-            document.getElementById('chancellor-policies').innerHTML = priv.policies.map((p, i) => `
-                <div class="policy-card ${p}" onclick="chancellorEnact(${i})">
-                    ${p.toUpperCase()}
-                </div>
-            `).join('');
+            // Check if veto power is available (5+ staff policies)
+            const vetoAvailable = pub.staffPolicies >= 5;
+
+            document.getElementById('legislative-chancellor-info').innerHTML = vetoAvailable
+                ? 'Choose a policy to ENACT or request a VETO:'
+                : 'Choose a policy to ENACT:';
+
+            document.getElementById('chancellor-policies').innerHTML = `
+                ${priv.policies.map((p, i) => `
+                    <div class="policy-card ${p}" onclick="chancellorEnact(${i})">
+                        ${p.toUpperCase()}
+                    </div>
+                `).join('')}
+                ${vetoAvailable ? `
+                    <div class="veto-option">
+                        <button class="btn btn-warning veto-btn" onclick="requestVeto()">
+                            🚫 Request Veto
+                        </button>
+                        <p class="veto-hint">Both you and the President must agree to veto.</p>
+                    </div>
+                ` : ''}
+            `;
         } else {
             document.getElementById('legislative-waiting-phase').classList.remove('hidden');
             const chancellor = pub.players.find(p => p.id === pub.currentChancellorId);
@@ -1855,14 +1933,21 @@ function renderExecutivePhase() {
     switch (power) {
         case 'investigate':
             document.getElementById('executive-info').textContent = 'Investigate a player\'s loyalty:';
+            // Filter out already-investigated players (per official rules: no player may be investigated twice)
+            const investigatedPlayers = pub.investigatedPlayers || [];
             document.getElementById('executive-action').innerHTML = pub.players
                 .filter(p => p.isAlive && p.id !== gameState.playerId)
-                .map(p => `
-                    <div class="player-card" onclick="investigatePlayer('${p.id}')">
-                        ${renderPlayerAvatar(p, 'large')}
-                        <h3>${p.name}</h3>
-                    </div>
-                `).join('');
+                .map(p => {
+                    const alreadyInvestigated = investigatedPlayers.includes(p.id);
+                    return `
+                        <div class="player-card ${alreadyInvestigated ? 'disabled investigated' : ''}"
+                             ${!alreadyInvestigated ? `onclick="investigatePlayer('${p.id}')"` : ''}>
+                            ${renderPlayerAvatar(p, 'large')}
+                            <h3>${p.name}</h3>
+                            ${alreadyInvestigated ? '<span class="player-badge">Already Investigated</span>' : ''}
+                        </div>
+                    `;
+                }).join('');
             break;
 
         case 'examine':

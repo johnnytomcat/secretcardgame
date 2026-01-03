@@ -17,6 +17,7 @@ const {
     assignRoles,
     initializeDeck,
     drawPolicies,
+    reshuffleDeckIfNeeded,
     getExecutivePower,
     getPublicGameState,
     getPrivatePlayerState,
@@ -72,6 +73,8 @@ function createMockRoom(playerCount) {
             votes: [],
             executivePower: null,
             executedPlayer: null,
+            investigatedPlayers: [],
+            vetoRequested: false,
             winner: null,
             winReason: null
         }
@@ -1104,5 +1107,318 @@ describe('Player Status Bar Data', () => {
         const publicState = getPublicGameState(room);
 
         expect(publicState.deckCount).toBe(17);
+    });
+});
+
+// ============================================================
+// NEW TESTS FOR RULE FIXES
+// ============================================================
+
+describe('Term Limits - Alive Players Check (Bug Fix)', () => {
+    test('Previous president CAN be nominated when 6 players but only 5 alive', () => {
+        const room = createMockRoom(6);
+        room.gameState.currentPresidentIndex = 1;
+        room.gameState.previousPresidentId = 'player_0';
+        // Kill one player so only 5 are alive
+        room.players[5].isAlive = false;
+
+        // With only 5 alive players, previous president should be valid
+        expect(isValidChancellorCandidate(room, 'player_0')).toBe(true);
+    });
+
+    test('Previous president CANNOT be nominated when 6 players and all alive', () => {
+        const room = createMockRoom(6);
+        room.gameState.currentPresidentIndex = 1;
+        room.gameState.previousPresidentId = 'player_0';
+
+        // With 6 alive players, previous president should be invalid
+        expect(isValidChancellorCandidate(room, 'player_0')).toBe(false);
+    });
+
+    test('Previous president CAN be nominated when started with 6 but 2 dead', () => {
+        const room = createMockRoom(6);
+        room.gameState.currentPresidentIndex = 2;
+        room.gameState.previousPresidentId = 'player_0';
+        // Kill two players so only 4 are alive
+        room.players[4].isAlive = false;
+        room.players[5].isAlive = false;
+
+        // With only 4 alive players, previous president should be valid
+        expect(isValidChancellorCandidate(room, 'player_0')).toBe(true);
+    });
+
+    test('AI chooseChancellor respects alive player term limits', () => {
+        const room = createMockRoom(6);
+        assignRoles(room);
+        room.gameState.currentPresidentIndex = 2;
+        room.gameState.previousPresidentId = 'player_0';
+        room.gameState.previousChancellorId = 'player_1';
+        // Kill one player so only 5 are alive
+        room.players[5].isAlive = false;
+
+        const brain = new AIBrain(room, room.players[2]);
+
+        // Run multiple times to ensure it never picks invalid candidates
+        for (let i = 0; i < 20; i++) {
+            const choice = brain.chooseChancellor();
+            expect(choice).not.toBe('player_1'); // Previous chancellor always invalid
+            expect(choice).not.toBe('player_2'); // Self always invalid
+            // player_0 (previous president) should now be valid since only 5 alive
+        }
+    });
+});
+
+describe('Deck Reshuffle When < 3 Cards (Bug Fix)', () => {
+    test('reshuffleDeckIfNeeded should reshuffle when deck has < 3 cards', () => {
+        const room = createMockRoom(4);
+        room.gameState.policyDeck = ['guest', 'staff'];
+        room.gameState.discardPile = ['staff', 'staff', 'guest', 'staff', 'guest'];
+
+        reshuffleDeckIfNeeded(room);
+
+        expect(room.gameState.policyDeck.length).toBe(7); // 2 + 5
+        expect(room.gameState.discardPile.length).toBe(0);
+    });
+
+    test('reshuffleDeckIfNeeded should not reshuffle when deck has >= 3 cards', () => {
+        const room = createMockRoom(4);
+        room.gameState.policyDeck = ['guest', 'staff', 'staff'];
+        room.gameState.discardPile = ['staff', 'guest'];
+
+        reshuffleDeckIfNeeded(room);
+
+        expect(room.gameState.policyDeck.length).toBe(3);
+        expect(room.gameState.discardPile.length).toBe(2);
+    });
+
+    test('reshuffleDeckIfNeeded should reshuffle when deck is empty', () => {
+        const room = createMockRoom(4);
+        room.gameState.policyDeck = [];
+        room.gameState.discardPile = ['staff', 'staff', 'guest', 'staff'];
+
+        reshuffleDeckIfNeeded(room);
+
+        expect(room.gameState.policyDeck.length).toBe(4);
+        expect(room.gameState.discardPile.length).toBe(0);
+    });
+
+    test('reshuffleDeckIfNeeded should reshuffle when deck has 1 card', () => {
+        const room = createMockRoom(4);
+        room.gameState.policyDeck = ['guest'];
+        room.gameState.discardPile = ['staff', 'staff', 'staff'];
+
+        reshuffleDeckIfNeeded(room);
+
+        expect(room.gameState.policyDeck.length).toBe(4);
+        expect(room.gameState.discardPile.length).toBe(0);
+    });
+
+    test('reshuffleDeckIfNeeded preserves all cards', () => {
+        const room = createMockRoom(4);
+        room.gameState.policyDeck = ['guest', 'staff'];
+        room.gameState.discardPile = ['staff', 'guest', 'staff'];
+
+        const totalBefore = room.gameState.policyDeck.length + room.gameState.discardPile.length;
+        const guestsBefore = [...room.gameState.policyDeck, ...room.gameState.discardPile].filter(p => p === 'guest').length;
+        const staffBefore = [...room.gameState.policyDeck, ...room.gameState.discardPile].filter(p => p === 'staff').length;
+
+        reshuffleDeckIfNeeded(room);
+
+        const totalAfter = room.gameState.policyDeck.length;
+        const guestsAfter = room.gameState.policyDeck.filter(p => p === 'guest').length;
+        const staffAfter = room.gameState.policyDeck.filter(p => p === 'staff').length;
+
+        expect(totalAfter).toBe(totalBefore);
+        expect(guestsAfter).toBe(guestsBefore);
+        expect(staffAfter).toBe(staffBefore);
+    });
+});
+
+describe('Investigation Tracking - No Duplicate Investigations (Bug Fix)', () => {
+    test('investigatedPlayers should be included in public game state', () => {
+        const room = createMockRoom(6);
+        room.gameState.investigatedPlayers = ['player_1', 'player_2'];
+
+        const publicState = getPublicGameState(room);
+
+        expect(publicState.investigatedPlayers).toEqual(['player_1', 'player_2']);
+    });
+
+    test('investigatedPlayers should be empty initially', () => {
+        const room = createMockRoom(6);
+
+        const publicState = getPublicGameState(room);
+
+        expect(publicState.investigatedPlayers).toEqual([]);
+    });
+
+    test('AI chooseInvestigateTarget should not target already-investigated players', () => {
+        const room = createMockRoom(6);
+        assignRoles(room);
+        room.gameState.investigatedPlayers = ['player_1', 'player_2', 'player_3'];
+
+        const brain = new AIBrain(room, room.players[0]);
+
+        // Run multiple times to ensure it never picks investigated players
+        for (let i = 0; i < 20; i++) {
+            const target = brain.chooseInvestigateTarget();
+            expect(target).not.toBe('player_0'); // Self
+            expect(target).not.toBe('player_1'); // Already investigated
+            expect(target).not.toBe('player_2'); // Already investigated
+            expect(target).not.toBe('player_3'); // Already investigated
+            // Should only pick player_4 or player_5
+            expect(['player_4', 'player_5']).toContain(target);
+        }
+    });
+
+    test('AI chooseInvestigateTarget returns null when all eligible players investigated', () => {
+        const room = createMockRoom(4);
+        assignRoles(room);
+        // Investigate all other players
+        room.gameState.investigatedPlayers = ['player_1', 'player_2', 'player_3'];
+
+        const brain = new AIBrain(room, room.players[0]);
+        const target = brain.chooseInvestigateTarget();
+
+        expect(target).toBeNull();
+    });
+
+    test('resetGameToLobby should clear investigatedPlayers', () => {
+        const room = createMockRoom(6);
+        room.gameState.investigatedPlayers = ['player_1', 'player_2'];
+
+        resetGameToLobby(room);
+
+        expect(room.gameState.investigatedPlayers).toEqual([]);
+    });
+});
+
+describe('Veto Power Mechanics (New Feature)', () => {
+    test('vetoRequested should be included in public game state', () => {
+        const room = createMockRoom(4);
+        room.gameState.vetoRequested = true;
+
+        const publicState = getPublicGameState(room);
+
+        expect(publicState.vetoRequested).toBe(true);
+    });
+
+    test('vetoRequested should be false initially', () => {
+        const room = createMockRoom(4);
+
+        const publicState = getPublicGameState(room);
+
+        expect(publicState.vetoRequested).toBe(false);
+    });
+
+    test('AI shouldRequestVeto returns false when < 5 staff policies', () => {
+        const room = createMockRoom(4);
+        assignRoles(room);
+        room.gameState.staffPolicies = 4;
+
+        const brain = new AIBrain(room, room.players[0]);
+        const shouldVeto = brain.shouldRequestVeto(['guest', 'staff']);
+
+        expect(shouldVeto).toBe(false);
+    });
+
+    test('AI shouldRequestVeto can return true when >= 5 staff policies and no favorable policy', () => {
+        const room = createMockRoom(4);
+        assignRoles(room);
+        room.gameState.staffPolicies = 5;
+        const guest = room.players.find(p => p.role === 'guest');
+
+        const brain = new AIBrain(room, guest);
+
+        // Guest with only staff policies should often want to veto
+        let vetoCount = 0;
+        for (let i = 0; i < 50; i++) {
+            if (brain.shouldRequestVeto(['staff', 'staff'])) {
+                vetoCount++;
+            }
+        }
+        // Should veto at least some of the time (80% chance per AI logic)
+        expect(vetoCount).toBeGreaterThan(20);
+    });
+
+    test('AI shouldRequestVeto returns false when favorable policy available', () => {
+        const room = createMockRoom(4);
+        assignRoles(room);
+        room.gameState.staffPolicies = 5;
+        const guest = room.players.find(p => p.role === 'guest');
+
+        const brain = new AIBrain(room, guest);
+
+        // Guest with a guest policy available should usually not veto
+        let noVetoCount = 0;
+        for (let i = 0; i < 50; i++) {
+            if (!brain.shouldRequestVeto(['guest', 'staff'])) {
+                noVetoCount++;
+            }
+        }
+        // Should NOT veto most of the time when they have a good policy
+        expect(noVetoCount).toBe(50);
+    });
+
+    test('AI shouldAcceptVeto returns boolean', () => {
+        const room = createMockRoom(4);
+        assignRoles(room);
+
+        const brain = new AIBrain(room, room.players[0]);
+        const result = brain.shouldAcceptVeto();
+
+        expect(typeof result).toBe('boolean');
+    });
+
+    test('resetGameToLobby should clear vetoRequested', () => {
+        const room = createMockRoom(4);
+        room.gameState.vetoRequested = true;
+
+        resetGameToLobby(room);
+
+        expect(room.gameState.vetoRequested).toBe(false);
+    });
+});
+
+describe('Chaos Clears Term Limits (Bug Fix)', () => {
+    test('handleChaos clears both previousPresidentId and previousChancellorId', () => {
+        const room = createMockRoom(4);
+        initializeDeck(room);
+        room.gameState.previousPresidentId = 'player_0';
+        room.gameState.previousChancellorId = 'player_1';
+        room.gameState.electionTracker = 3;
+
+        handleChaos(room);
+
+        expect(room.gameState.previousPresidentId).toBeNull();
+        expect(room.gameState.previousChancellorId).toBeNull();
+    });
+
+    test('After chaos, previously restricted players should be valid chancellor candidates', () => {
+        const room = createMockRoom(6);
+        room.gameState.currentPresidentIndex = 2;
+        room.gameState.previousPresidentId = 'player_0';
+        room.gameState.previousChancellorId = 'player_1';
+        initializeDeck(room);
+
+        // Before chaos, these should be invalid
+        expect(isValidChancellorCandidate(room, 'player_0')).toBe(false);
+        expect(isValidChancellorCandidate(room, 'player_1')).toBe(false);
+
+        handleChaos(room);
+
+        // After chaos, term limits are cleared - player_0 and player_1 should now be valid
+        expect(isValidChancellorCandidate(room, 'player_0')).toBe(true);
+        expect(isValidChancellorCandidate(room, 'player_1')).toBe(true);
+    });
+
+    test('handleChaos resets election tracker to 0', () => {
+        const room = createMockRoom(4);
+        initializeDeck(room);
+        room.gameState.electionTracker = 3;
+
+        handleChaos(room);
+
+        expect(room.gameState.electionTracker).toBe(0);
     });
 });

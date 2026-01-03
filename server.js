@@ -13,6 +13,7 @@ const {
     assignRoles,
     initializeDeck,
     drawPolicies,
+    reshuffleDeckIfNeeded,
     getExecutivePower,
     getPublicGameState,
     getPrivatePlayerState,
@@ -72,6 +73,8 @@ function createRoom(hostId, hostName, sessionId = null) {
             specialElectionNextIndex: null,
             votes: [],
             executivePower: null,
+            investigatedPlayers: [],  // Track who has been investigated (per rules: no player may be investigated twice)
+            vetoRequested: false,  // Track if Chancellor has requested a veto (available after 5 fascist policies)
             winner: null,
             winReason: null
         }
@@ -122,7 +125,12 @@ function processAIActions(room) {
             processAIPresidentLegislative(room);
             break;
         case 'legislative-chancellor':
-            processAIChancellorLegislative(room);
+            // Handle veto response if veto was requested, otherwise let chancellor act
+            if (room.gameState.vetoRequested) {
+                processAIVetoResponse(room);
+            } else {
+                processAIChancellorLegislative(room);
+            }
             break;
         case 'policy-result':
             setTimeout(() => {
@@ -230,10 +238,23 @@ function processAIChancellorLegislative(room) {
     const chancellor = room.players.find(p => p.id === room.gameState.currentChancellorId);
     if (!isAIPlayer(chancellor)) return;
 
+    // If veto was requested and we're waiting for president response, don't act
+    if (room.gameState.vetoRequested) return;
+
     setTimeout(() => {
         if (room.gameState.phase !== 'legislative-chancellor') return;
+        if (room.gameState.vetoRequested) return;  // Double-check
 
         const ai = new AIBrain(room, chancellor);
+
+        // Consider requesting veto (only available after 5 staff policies)
+        if (ai.shouldRequestVeto(room.gameState.currentPolicies)) {
+            room.gameState.vetoRequested = true;
+            broadcastGameState(room);
+            processAIActions(room);  // This will trigger AI president to respond
+            return;
+        }
+
         const enactIndex = ai.chooseChancellorEnact(room.gameState.currentPolicies);
 
         const enacted = room.gameState.currentPolicies[enactIndex];
@@ -247,8 +268,60 @@ function processAIChancellorLegislative(room) {
             room.gameState.staffPolicies++;
         }
 
+        // Per official rules: reshuffle when fewer than 3 cards remain at end of legislative session
+        reshuffleDeckIfNeeded(room);
+
         room.gameState.enactedPolicy = enacted;
         room.gameState.phase = 'policy-result';
+
+        broadcastGameState(room);
+        processAIActions(room);
+    }, getAIDelay());
+}
+
+function processAIVetoResponse(room) {
+    const president = room.players[room.gameState.currentPresidentIndex];
+    if (!isAIPlayer(president)) return;
+
+    setTimeout(() => {
+        if (room.gameState.phase !== 'legislative-chancellor' || !room.gameState.vetoRequested) return;
+
+        const ai = new AIBrain(room, president);
+        const acceptVeto = ai.shouldAcceptVeto();
+
+        if (acceptVeto) {
+            // President accepts veto - discard both policies and increment election tracker
+            room.gameState.discardPile.push(...room.gameState.currentPolicies);
+            room.gameState.currentPolicies = [];
+            room.gameState.electionTracker++;
+            room.gameState.vetoRequested = false;
+
+            // Per official rules: reshuffle when fewer than 3 cards remain
+            reshuffleDeckIfNeeded(room);
+
+            // Check for chaos (3 failed elections/vetoes in a row)
+            if (room.gameState.electionTracker >= 3) {
+                const [policy] = drawPolicies(room, 1);
+                if (policy === 'guest') {
+                    room.gameState.guestPolicies++;
+                } else {
+                    room.gameState.staffPolicies++;
+                }
+                room.gameState.electionTracker = 0;
+                room.gameState.chaosPolicy = policy;
+                room.gameState.phase = 'chaos';
+
+                if (!checkWinCondition(room)) {
+                    // Will continue to election after chaos
+                }
+            } else {
+                advancePresidency(room);
+                room.gameState.phase = 'election';
+            }
+        } else {
+            // President rejects veto - Chancellor must enact a policy
+            room.gameState.vetoRequested = false;
+        }
 
         broadcastGameState(room);
         processAIActions(room);
@@ -269,6 +342,8 @@ function processAIExecutive(room) {
             case 'investigate':
                 const investigateTarget = ai.chooseInvestigateTarget();
                 if (investigateTarget) {
+                    // Track that this player has been investigated (per official rules: no player may be investigated twice)
+                    room.gameState.investigatedPlayers.push(investigateTarget);
                     // AI just "sees" the result, no need to emit
                     room.gameState.executivePower = null;
                     advancePresidency(room);
@@ -395,6 +470,9 @@ function handleContinueFromPolicy(room) {
 function handleContinueFromChaos(room) {
     if (!checkWinCondition(room)) {
         advancePresidency(room);
+        // Clear term limits after chaos (per official rules: "All players become eligible")
+        room.gameState.previousPresidentId = null;
+        room.gameState.previousChancellorId = null;
         room.gameState.phase = 'election';
     }
     broadcastGameState(room);
@@ -615,6 +693,7 @@ io.on('connection', (socket) => {
         if (!chancellor || !chancellor.isAlive) return;
         if (chancellorId === currentPresident.id) return;
         if (chancellorId === room.gameState.previousChancellorId) return;
+        // Per official rules: previous president only ineligible if MORE than 5 players ALIVE
         const alivePlayers = room.players.filter(p => p.isAlive);
         if (alivePlayers.length > 5 && chancellorId === room.gameState.previousPresidentId) return;
 
@@ -732,11 +811,80 @@ io.on('connection', (socket) => {
             room.gameState.staffPolicies++;
         }
 
+        // Per official rules: reshuffle when fewer than 3 cards remain at end of legislative session
+        reshuffleDeckIfNeeded(room);
+
         room.gameState.enactedPolicy = enacted;
         room.gameState.phase = 'policy-result';
 
         broadcastGameState(room);
         // Trigger auto-continue for policy result
+        processAIActions(room);
+    });
+
+    // Chancellor requests veto (only available after 5 fascist policies enacted)
+    socket.on('requestVeto', (code) => {
+        const room = getRoom(code);
+        if (!room || room.gameState.phase !== 'legislative-chancellor') return;
+
+        // Only Chancellor can request veto
+        if (socket.id !== room.gameState.currentChancellorId) return;
+
+        // Veto only available after 5 fascist policies (per official rules)
+        if (room.gameState.staffPolicies < 5) {
+            socket.emit('error', { message: 'Veto power is only available after 5 Staff policies are enacted' });
+            return;
+        }
+
+        // Mark veto as requested - President must now respond
+        room.gameState.vetoRequested = true;
+        broadcastGameState(room);
+        processAIActions(room);
+    });
+
+    // President responds to veto request
+    socket.on('respondToVeto', ({ code, accept }) => {
+        const room = getRoom(code);
+        if (!room || room.gameState.phase !== 'legislative-chancellor' || !room.gameState.vetoRequested) return;
+
+        const currentPresident = room.players[room.gameState.currentPresidentIndex];
+        if (socket.id !== currentPresident.id) return;
+
+        if (accept) {
+            // President accepts veto - discard both policies and increment election tracker
+            room.gameState.discardPile.push(...room.gameState.currentPolicies);
+            room.gameState.currentPolicies = [];
+            room.gameState.electionTracker++;
+            room.gameState.vetoRequested = false;
+
+            // Per official rules: reshuffle when fewer than 3 cards remain
+            reshuffleDeckIfNeeded(room);
+
+            // Check for chaos (3 failed elections/vetoes in a row)
+            if (room.gameState.electionTracker >= 3) {
+                const [policy] = drawPolicies(room, 1);
+                if (policy === 'guest') {
+                    room.gameState.guestPolicies++;
+                } else {
+                    room.gameState.staffPolicies++;
+                }
+                room.gameState.electionTracker = 0;
+                room.gameState.chaosPolicy = policy;
+                room.gameState.phase = 'chaos';
+
+                if (!checkWinCondition(room)) {
+                    // Will continue to election after chaos
+                }
+            } else {
+                advancePresidency(room);
+                room.gameState.phase = 'election';
+            }
+        } else {
+            // President rejects veto - Chancellor must enact a policy
+            room.gameState.vetoRequested = false;
+        }
+
+        broadcastGameState(room);
         processAIActions(room);
     });
 
@@ -759,6 +907,15 @@ io.on('connection', (socket) => {
 
         const target = room.players.find(p => p.id === targetId);
         if (!target || !target.isAlive) return;
+
+        // Per official rules: No player may be investigated twice in the same game
+        if (room.gameState.investigatedPlayers.includes(targetId)) {
+            socket.emit('error', { message: 'This player has already been investigated' });
+            return;
+        }
+
+        // Track that this player has been investigated
+        room.gameState.investigatedPlayers.push(targetId);
 
         // Send investigation result only to president
         socket.emit('investigationResult', {
@@ -895,6 +1052,8 @@ io.on('connection', (socket) => {
             specialElectionNextIndex: null,
             votes: [],
             executivePower: null,
+            investigatedPlayers: [],
+            vetoRequested: false,
             winner: null,
             winReason: null
         };
